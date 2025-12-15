@@ -197,5 +197,44 @@ echo -e "${GREEN}│  Press ${RED}Ctrl+C${GREEN} to stop all services           
 echo -e "${GREEN}└─────────────────────────────────────────────────────────────┘${NC}"
 echo ""
 
+# Step 6: Wait for API health check
+print_info "Waiting for API to be ready..."
+for i in {1..30}; do
+    if curl -s http://localhost:$API_PORT/health > /dev/null 2>&1; then
+        print_success "API is healthy and ready!"
+        break
+    fi
+    sleep 1
+    echo -n "."
+done
+echo ""
+
+# Step 7: Auto-open browser (optional)
+if [ "$1" != "--no-browser" ]; then
+    print_info "Opening browser..."
+    
+    # Try different methods to open browser (cross-platform)
+    if command -v xdg-open &> /dev/null; then
+        xdg-open "http://localhost:$FRONTEND_PORT" 2>/dev/null &
+    elif command -v open &> /dev/null; then
+        open "http://localhost:$FRONTEND_PORT" 2>/dev/null &
+    elif command -v start &> /dev/null; then
+        start "http://localhost:$FRONTEND_PORT" 2>/dev/null &
+    elif [ -n "$BROWSER" ]; then
+        $BROWSER "http://localhost:$FRONTEND_PORT" 2>/dev/null &
+    else
+        # For WSL - try to open in Windows browser
+        if grep -qi microsoft /proc/version 2>/dev/null; then
+            cmd.exe /c start "http://localhost:$FRONTEND_PORT" 2>/dev/null &
+        else
+            print_warning "Could not auto-open browser. Please open manually:"
+            echo -e "  ${CYAN}http://localhost:$FRONTEND_PORT${NC}"
+        fi
+    fi
+fi
+
+print_success "Ready! Upload an X-ray image to get predictions."
+echo ""
+
 # Keep script running and wait for both processes
 wait $API_PID $FRONTEND_PID
