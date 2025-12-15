@@ -1,0 +1,65 @@
+# ============================================
+# Koyeb Deployment Configuration
+# ============================================
+# Deploy with: koyeb deploy --config koyeb.yaml
+# Or connect your GitHub repo to Koyeb for auto-deploy
+
+name: pneumonia-detection-api
+
+# Build configuration
+build:
+  type: dockerfile
+  dockerfile: Dockerfile
+
+# Service configuration
+service:
+  # Instance type (nano/micro/small/medium/large)
+  # Use at least "small" for TensorFlow models
+  instance_type: small
+  
+  # Number of instances (scale as needed)
+  instances: 1
+  
+  # Port configuration
+  ports:
+    - port: 8000
+      protocol: http
+
+  # Environment variables
+  env:
+    - key: HOST
+      value: "0.0.0.0"
+    - key: PORT
+      value: "8000"
+    - key: LOG_LEVEL
+      value: "INFO"
+    - key: ALLOWED_ORIGINS
+      value: "*"
+    - key: TF_CPP_MIN_LOG_LEVEL
+      value: "2"
+    - key: CUDA_VISIBLE_DEVICES
+      value: "-1"
+
+  # Health check configuration
+  health_checks:
+    - type: http
+      port: 8000
+      path: /health
+      interval_seconds: 30
+      timeout_seconds: 10
+      healthy_threshold: 1
+      unhealthy_threshold: 3
+      # Grace period for model loading
+      grace_period_seconds: 120
+
+  # Scaling configuration (optional)
+  autoscaling:
+    min_instances: 1
+    max_instances: 3
+    target:
+      cpu_percent: 80
+
+# Routes configuration
+routes:
+  - path: /
+    port: 8000

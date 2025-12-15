@@ -1,0 +1,141 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "description": "Azure Container Instance deployment for Pneumonia Detection API"
+  },
+  "parameters": {
+    "containerGroupName": {
+      "type": "string",
+      "defaultValue": "pneumonia-api",
+      "metadata": {
+        "description": "Name for the container group"
+      }
+    },
+    "imageRegistry": {
+      "type": "string",
+      "metadata": {
+        "description": "Container registry (e.g., yourregistry.azurecr.io)"
+      }
+    },
+    "imageName": {
+      "type": "string",
+      "defaultValue": "pneumonia-detection-api:latest",
+      "metadata": {
+        "description": "Container image name with tag"
+      }
+    },
+    "cpuCores": {
+      "type": "string",
+      "defaultValue": "2",
+      "metadata": {
+        "description": "CPU cores for the container"
+      }
+    },
+    "memoryInGb": {
+      "type": "string",
+      "defaultValue": "4",
+      "metadata": {
+        "description": "Memory in GB for the container"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.ContainerInstance/containerGroups",
+      "apiVersion": "2021-09-01",
+      "name": "[parameters('containerGroupName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "containers": [
+          {
+            "name": "pneumonia-api",
+            "properties": {
+              "image": "[concat(parameters('imageRegistry'), '/', parameters('imageName'))]",
+              "ports": [
+                {
+                  "port": 8000,
+                  "protocol": "TCP"
+                }
+              ],
+              "environmentVariables": [
+                {
+                  "name": "HOST",
+                  "value": "0.0.0.0"
+                },
+                {
+                  "name": "PORT",
+                  "value": "8000"
+                },
+                {
+                  "name": "LOG_LEVEL",
+                  "value": "INFO"
+                },
+                {
+                  "name": "ALLOWED_ORIGINS",
+                  "value": "*"
+                },
+                {
+                  "name": "TF_CPP_MIN_LOG_LEVEL",
+                  "value": "2"
+                },
+                {
+                  "name": "CUDA_VISIBLE_DEVICES",
+                  "value": "-1"
+                }
+              ],
+              "resources": {
+                "requests": {
+                  "cpu": "[parameters('cpuCores')]",
+                  "memoryInGB": "[parameters('memoryInGb')]"
+                }
+              },
+              "livenessProbe": {
+                "httpGet": {
+                  "path": "/health",
+                  "port": 8000
+                },
+                "initialDelaySeconds": 120,
+                "periodSeconds": 30,
+                "failureThreshold": 3,
+                "timeoutSeconds": 10
+              },
+              "readinessProbe": {
+                "httpGet": {
+                  "path": "/health",
+                  "port": 8000
+                },
+                "initialDelaySeconds": 60,
+                "periodSeconds": 10,
+                "failureThreshold": 3,
+                "timeoutSeconds": 5
+              }
+            }
+          }
+        ],
+        "osType": "Linux",
+        "ipAddress": {
+          "type": "Public",
+          "ports": [
+            {
+              "port": 8000,
+              "protocol": "TCP"
+            }
+          ],
+          "dnsNameLabel": "[parameters('containerGroupName')]"
+        },
+        "restartPolicy": "Always"
+      }
+    }
+  ],
+  "outputs": {
+    "containerIPv4Address": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups', parameters('containerGroupName'))).ipAddress.ip]"
+    },
+    "containerFQDN": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups', parameters('containerGroupName'))).ipAddress.fqdn]"
+    }
+  }
+}
