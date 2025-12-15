@@ -69,7 +69,8 @@ training.log
 # ===========================
 checkpoints/
 *.h5
-*.keras
+# Allow .keras models for deployment
+# *.keras
 *.tflite
 *.pb
 *.onnx
@@ -87,7 +88,11 @@ archive/
 # ===========================
 # Results and Outputs
 # ===========================
-results/
+# Allow results/models and results/training_config.json for deployment
+results/plots/
+results/predictions/
+# Don't ignore results/models/ - needed for deployment
+# Don't ignore results/training_config.json - needed for deployment
 
 # ===========================
 # OS Generated Files
