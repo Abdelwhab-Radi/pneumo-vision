@@ -190,12 +190,18 @@ def load_model():
         if Path(path).exists():
             try:
                 model = keras.models.load_model(path)
-                return model, path
+                # Auto-detect input size from model
+                input_shape = model.input_shape
+                if input_shape and len(input_shape) >= 3:
+                    img_size = input_shape[1]  # (batch, height, width, channels)
+                else:
+                    img_size = 224  # fallback
+                return model, path, img_size
             except Exception as e:
                 st.error(f"Error loading model from {path}: {e}")
                 continue
     
-    return None, None
+    return None, None, 224
 
 
 @st.cache_data
@@ -236,10 +242,9 @@ def preprocess_image(image: Image.Image, img_size: int = 224) -> np.ndarray:
     return img_array
 
 
-def make_prediction(model, image: Image.Image, config: dict) -> dict:
+def make_prediction(model, image: Image.Image, img_size: int = 224) -> dict:
     """Make prediction on the image"""
-    img_size = config.get('img_size', 224)
-    class_names = config.get('class_names', ['NORMAL', 'PNEUMONIA'])
+    class_names = ['NORMAL', 'PNEUMONIA']
     
     # Preprocess
     img_array = preprocess_image(image, img_size)
@@ -271,9 +276,8 @@ def main():
     st.markdown('<h1 class="main-header">🫁 Pneumonia Detection AI</h1>', unsafe_allow_html=True)
     st.markdown('<p class="sub-header">Upload a chest X-ray image for instant AI-powered diagnosis</p>', unsafe_allow_html=True)
     
-    # Load model
-    model, model_path = load_model()
-    config = load_config()
+    # Load model (now returns img_size too)
+    model, model_path, img_size = load_model()
     
     # Sidebar
     with st.sidebar:
@@ -283,7 +287,7 @@ def main():
         if model is not None:
             st.success("✅ Model Loaded")
             st.caption(f"Path: `{model_path}`")
-            st.caption(f"Input Size: {config.get('img_size', 224)}x{config.get('img_size', 224)}")
+            st.caption(f"Input Size: {img_size}x{img_size}")
         else:
             st.error("❌ Model not found")
             st.info("Please ensure model file exists in `results/models/`")
@@ -335,8 +339,8 @@ def main():
         
         if uploaded_file is not None and model is not None:
             with st.spinner("🧠 Analyzing image..."):
-                # Make prediction
-                result = make_prediction(model, image, config)
+                # Make prediction with correct image size
+                result = make_prediction(model, image, img_size)
             
             # Display result
             prediction = result['prediction']
