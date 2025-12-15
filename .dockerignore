@@ -37,6 +37,7 @@ checkpoints/
 !README.md
 *.txt
 !requirements.txt
+!requirements_api.txt
 
 # Git
 .git/
