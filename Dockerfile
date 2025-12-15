@@ -31,13 +31,12 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 
 # Install runtime system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
-    libxrender-dev \
+    libxrender1 \
     curl \
-    nginx \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
@@ -57,10 +56,6 @@ COPY results/training_config.json ./results/training_config.json
 
 # Copy frontend files for static serving
 COPY frontend/ ./frontend/
-
-# Configure nginx for frontend (optional - if you want to serve frontend separately)
-RUN mkdir -p /var/www/html && \
-    cp -r frontend/* /var/www/html/
 
 # Create startup script for running both API and serving frontend
 COPY <<EOF /app/start.sh
