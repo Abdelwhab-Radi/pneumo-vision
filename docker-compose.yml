@@ -1,0 +1,60 @@
+# ============================================
+# Pneumonia Detection API - Docker Compose
+# ============================================
+# Easy deployment with: docker compose up
+
+version: '3.8'
+
+services:
+  pneumonia-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: pneumonia-detection-api:latest
+    container_name: pneumonia-api
+    
+    # Port mapping
+    ports:
+      - "${PORT:-8000}:8000"
+    
+    # Environment variables
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
+    
+    # Volume mounts (optional - for custom models)
+    volumes:
+      - ./results/models:/app/results/models:ro
+      - ./logs:/app/logs
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+# Optional: Add GPU support (uncomment for NVIDIA GPU)
+# services:
+#   pneumonia-api:
+#     deploy:
+#       resources:
+#         reservations:
+#           devices:
+#             - driver: nvidia
+#               count: 1
+#               capabilities: [gpu]

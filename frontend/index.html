@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI-powered pneumonia detection from chest X-ray images. Upload your X-ray and get instant analysis.">
+    <title>Pneumonia Detection AI | Chest X-Ray Analysis</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-animation">
+        <div class="bg-gradient"></div>
+        <div class="bg-orbs">
+            <div class="orb orb-1"></div>
+            <div class="orb orb-2"></div>
+            <div class="orb orb-3"></div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+                        <path d="M12 6v6l4 2"/>
+                        <path d="M8 12h8"/>
+                        <path d="M12 8v8"/>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <h1>Pneumonia Detection</h1>
+                    <span class="tagline">AI-Powered X-Ray Analysis</span>
+                </div>
+            </div>
+            <div class="status-indicator" id="apiStatus">
+                <span class="status-dot"></span>
+                <span class="status-text">Checking API...</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Upload Section -->
+            <section class="upload-section glass-card">
+                <div class="section-header">
+                    <h2>Upload X-Ray Image</h2>
+                    <p>Drag and drop or click to select a chest X-ray image for analysis</p>
+                </div>
+                
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="fileInput" accept="image/*" hidden>
+                    <div class="upload-content">
+                        <div class="upload-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17,8 12,3 7,8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                        </div>
+                        <div class="upload-text">
+                            <span class="primary-text">Drop your X-ray image here</span>
+                            <span class="secondary-text">or click to browse</span>
+                        </div>
+                        <div class="supported-formats">
+                            <span>Supported: JPEG, PNG, DICOM</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Image Preview -->
+                <div class="preview-container" id="previewContainer" style="display: none;">
+                    <div class="preview-image-wrapper">
+                        <img id="previewImage" alt="X-ray preview">
+                        <button class="remove-image" id="removeImage" title="Remove image">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <button class="analyze-btn" id="analyzeBtn">
+                        <span class="btn-text">Analyze Image</span>
+                        <span class="btn-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14"/>
+                                <path d="M12 5l7 7-7 7"/>
+                            </svg>
+                        </span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section class="results-section glass-card" id="resultsSection" style="display: none;">
+                <div class="section-header">
+                    <h2>Analysis Results</h2>
+                    <span class="analysis-time" id="analysisTime"></span>
+                </div>
+
+                <!-- Loading State -->
+                <div class="loading-state" id="loadingState" style="display: none;">
+                    <div class="loader">
+                        <div class="loader-ring"></div>
+                        <div class="loader-ring"></div>
+                        <div class="loader-ring"></div>
+                    </div>
+                    <p>Analyzing X-ray image...</p>
+                </div>
+
+                <!-- Results Content -->
+                <div class="results-content" id="resultsContent" style="display: none;">
+                    <div class="prediction-result" id="predictionResult">
+                        <div class="diagnosis-badge" id="diagnosisBadge">
+                            <span class="diagnosis-icon"></span>
+                            <span class="diagnosis-text" id="diagnosisText"></span>
+                        </div>
+                        <div class="confidence-score">
+                            <span class="confidence-label">Confidence</span>
+                            <div class="confidence-bar-container">
+                                <div class="confidence-bar" id="confidenceBar"></div>
+                            </div>
+                            <span class="confidence-value" id="confidenceValue"></span>
+                        </div>
+                    </div>
+
+                    <div class="probability-breakdown">
+                        <h3>Probability Breakdown</h3>
+                        <div class="probability-items" id="probabilityItems">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <div class="result-disclaimer">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        <p>This is an AI-assisted analysis and should not replace professional medical diagnosis. Please consult a healthcare provider for proper evaluation.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Model Info Section -->
+            <section class="info-section glass-card">
+                <div class="section-header">
+                    <h2>Model Information</h2>
+                </div>
+                <div class="info-grid" id="modelInfo">
+                    <div class="info-item">
+                        <span class="info-label">Status</span>
+                        <span class="info-value" id="modelStatus">Loading...</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Input Size</span>
+                        <span class="info-value" id="inputSize">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Classes</span>
+                        <span class="info-value" id="modelClasses">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">API Version</span>
+                        <span class="info-value" id="apiVersion">1.0.0</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2024 Pneumonia Detection AI. For research and educational purposes only.</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

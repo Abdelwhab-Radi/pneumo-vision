@@ -1,0 +1,73 @@
+# ===========================================
+# Docker Ignore - Exclude from build context
+# ===========================================
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Training data (don't include in production image)
+chest_xray/
+chest-xray-pneumonia.zip
+gg/
+
+# Logs and cache
+logs/
+cache/
+*.log
+
+# Checkpoints (keep only final model)
+checkpoints/
+
+# Development files
+*.md
+!README.md
+*.txt
+!requirements.txt
+
+# Git
+.git/
+.gitignore
+
+# Environment files (don't include secrets)
+.env
+.env.local
+
+# Test files
+test*.py
+*_test.py
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Old configs and scripts
+configs/
+compare_configs.py
+run_training.ps1
+run_training_improved.py
+install_cudnn.sh
+
+# Verification scripts (not needed in production)
+diagnose_gpu.py
+verify_gpu.py
+quick_start.py
+simple_predict.py
