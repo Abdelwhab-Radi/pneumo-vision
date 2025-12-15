@@ -1,15 +1,18 @@
 # ============================================
 # Streamlit Cloud Requirements
 # ============================================
-# For deploying on Streamlit Cloud
-
-# Core ML Framework (use CPU-only TensorFlow for smaller image)
-tensorflow-cpu==2.15.0
-numpy>=1.26.0,<2.0.0
-pillow>=10.0.0
+# Optimized for Streamlit Cloud deployment
 
 # Streamlit
 streamlit>=1.29.0
 
-# Data Processing
+# TensorFlow CPU-only (lighter, works on Streamlit Cloud)
+tensorflow-cpu>=2.15.0,<2.18.0
+
+# Core dependencies
+numpy>=1.26.0
+pillow>=10.0.0
 pandas>=2.0.0
+
+# Note: Do NOT include FastAPI, uvicorn, or other API dependencies
+# Streamlit Cloud has limited resources

@@ -1,31 +1,18 @@
-# ===========================================
-# Pneumonia Detection API - Dependencies
-# ===========================================
-# Install with: pip install -r requirements.txt
+# ============================================
+# Streamlit Cloud Requirements
+# ============================================
+# Optimized for Streamlit Cloud deployment
 
-# Core ML Framework
-tensorflow==2.20.0
-numpy>=1.26.0,<2.0.0
+# Streamlit
+streamlit>=1.29.0
+
+# TensorFlow CPU-only (lighter, works on Streamlit Cloud)
+tensorflow-cpu>=2.15.0,<2.18.0
+
+# Core dependencies
+numpy>=1.26.0
 pillow>=10.0.0
-
-# API Framework  
-fastapi>=0.115.0
-uvicorn[standard]>=0.32.0
-python-multipart>=0.0.17
-
-# Data Processing
 pandas>=2.0.0
-scikit-learn>=1.4.0
 
-# Visualization (optional - for training)
-matplotlib>=3.8.0
-seaborn>=0.13.0
-
-# Advanced Augmentation (optional - for training)
-albumentations>=1.4.0
-
-# HTTP Client (for testing)
-requests>=2.31.0
-
-# Environment Variables
-python-dotenv>=1.0.0
+# Note: Do NOT include FastAPI, uvicorn, or other API dependencies
+# Streamlit Cloud has limited resources
