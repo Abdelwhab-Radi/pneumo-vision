@@ -5,7 +5,7 @@
 
 // Configuration
 const CONFIG = {
-    API_BASE_URL: 'http://localhost:8000',
+    API_BASE_URL: 'https://determined-stillness-production.up.railway.app',
     ENDPOINTS: {
         HEALTH: '/health',
         PREDICT: '/predict',
