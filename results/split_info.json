@@ -1,0 +1,12 @@
+{
+  "NORMAL": {
+    "total": 1341,
+    "train": 1073,
+    "val": 268
+  },
+  "PNEUMONIA": {
+    "total": 1394,
+    "train": 1115,
+    "val": 279
+  }
+}
