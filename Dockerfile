@@ -14,11 +14,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install dependencies
-COPY requirements.txt .
+COPY requirements_api.txt .
 
 # Create wheels for faster installation in final stage
 RUN pip install --upgrade pip && \
-    pip wheel --no-cache-dir --wheel-dir /build/wheels -r requirements.txt
+    pip wheel --no-cache-dir --wheel-dir /build/wheels -r requirements_api.txt
 
 
 # Stage 2: Production Runtime
