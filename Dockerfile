@@ -45,11 +45,8 @@ COPY --from=builder /build/wheels /wheels
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir /wheels/* && \
     rm -rf /wheels && \
-    # Aggressive cleanup to reduce image size
-    find /usr/local -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true && \
-    find /usr/local -type d -name tests -exec rm -rf {} + 2>/dev/null || true && \
-    find /usr/local -type d -name test -exec rm -rf {} + 2>/dev/null || true && \
-    rm -rf /root/.cache/pip
+    rm -rf /root/.cache/pip && \
+    find /usr/local -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 
 # Copy application code
 COPY config.py .
