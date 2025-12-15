@@ -90,7 +90,9 @@ USER appuser
 
 # Server Configuration
 ENV HOST=0.0.0.0
-ENV PORT=8000
+# PORT: 7860 for Hugging Face Spaces, 8000 for other platforms
+# Can be overridden at runtime
+ENV PORT=7860
 
 # TensorFlow Configuration (CPU-only for cloud deployment)
 ENV TF_CPP_MIN_LOG_LEVEL=2
@@ -115,8 +117,8 @@ ENV ALLOWED_ORIGINS=*
 # Expose Port & Health Check
 # ============================================
 
-# Expose the API port
-EXPOSE 8000
+# Expose the API port (7860 for HF Spaces, override with -p for other platforms)
+EXPOSE 7860
 
 # Health check for container orchestration (Azure, Koyeb)
 # - interval: How often to check (30s)

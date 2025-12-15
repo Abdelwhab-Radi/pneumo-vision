@@ -1,6 +1,6 @@
 # 🚀 Deployment Guide - Pneumonia Detection API
 
-This guide covers deploying the Pneumonia Detection API to **Azure** and **Koyeb**.
+This guide covers deploying the Pneumonia Detection API to **Streamlit Cloud**, **Render**, **Azure**, and **Koyeb**.
 
 ---
 
@@ -8,31 +8,84 @@ This guide covers deploying the Pneumonia Detection API to **Azure** and **Koyeb
 
 - Docker installed locally
 - Your trained model in `results/models/model_final.keras`
-- Account on [Azure](https://azure.microsoft.com) or [Koyeb](https://koyeb.com)
+- Account on your chosen platform
 
 ---
 
-## 🐳 Building the Docker Image
+## 🎈 Deploy to Streamlit Cloud (Easiest!)
 
-### Build locally:
-```bash
-# Build the image
-docker build -t pneumonia-detection-api:latest .
+Streamlit Cloud is the **simplest option** - no Docker needed, just push to GitHub!
 
-# Test locally
-docker run -p 8000:8000 pneumonia-detection-api:latest
+### Step 1: Prepare Your Repository
 
-# Test the API
-curl http://localhost:8000/health
+Your repo should have these files:
+```
+├── streamlit_app.py          # ✅ Created
+├── requirements_streamlit.txt # ✅ Created (rename to requirements.txt)
+├── .streamlit/
+│   └── config.toml           # ✅ Created
+└── results/
+    └── models/
+        └── model_final.keras  # Your trained model
 ```
 
-### Using Docker Compose:
+### Step 2: Rename Requirements File
 ```bash
-# Build and run
-docker compose up --build
+# For Streamlit Cloud, use the streamlit requirements
+cp requirements_streamlit.txt requirements.txt
+```
 
-# Run in background
-docker compose up -d --build
+### Step 3: Push to GitHub
+```bash
+git add .
+git commit -m "Add Streamlit app"
+git push origin main
+```
+
+### Step 4: Deploy on Streamlit Cloud
+
+1. Go to [share.streamlit.io](https://share.streamlit.io)
+2. Click **"New app"**
+3. Connect your GitHub repository
+4. Configure:
+   | Setting | Value |
+   |---------|-------|
+   | **Repository** | your-username/your-repo |
+   | **Branch** | main |
+   | **Main file** | streamlit_app.py |
+5. Click **"Deploy!"**
+
+### Step 5: Wait for Deployment
+- First build takes **5-10 minutes** (TensorFlow installation)
+- Subsequent deploys are faster (cached dependencies)
+
+### Your App URL
+```
+https://your-app-name.streamlit.app
+```
+
+### ⚠️ Streamlit Cloud Limits
+
+| Limit | Value |
+|-------|-------|
+| **RAM** | 1GB (may be tight for TensorFlow) |
+| **Storage** | 1GB for app + model |
+| **Compute** | Shared CPU |
+| **Sleep** | After 7 days inactivity (free tier) |
+
+### 💡 Tips for Streamlit Cloud
+
+1. **Use `tensorflow-cpu`** instead of `tensorflow` (smaller)
+2. **Keep model under 100MB** if possible (use LFS for larger)
+3. **Add secrets** in Streamlit Cloud dashboard (not in code)
+
+### Run Locally First
+```bash
+# Test before deploying
+pip install -r requirements_streamlit.txt
+streamlit run streamlit_app.py
+
+# Opens at http://localhost:8501
 ```
 
 ---
@@ -75,6 +128,89 @@ docker tag pneumonia-detection-api:latest your-registry/pneumonia-api:latest
 docker push your-registry/pneumonia-api:latest
 
 # Then use the pushed image in Koyeb
+```
+
+---
+
+## 🟣 Deploy to Render
+
+### Option 1: Via Dashboard (Recommended)
+
+1. **Push your code to GitHub**
+   ```bash
+   git add .
+   git commit -m "Add deployment configuration"
+   git push origin main
+   ```
+
+2. **Create a new Web Service on Render**
+   - Go to [Render Dashboard](https://dashboard.render.com)
+   - Click **New** → **Web Service**
+   - Connect your GitHub repository
+   - Render will auto-detect the `render.yaml` file
+
+3. **Configure the service** (if not using render.yaml):
+   | Setting | Value |
+   |---------|-------|
+   | **Environment** | Docker |
+   | **Plan** | Starter ($7/mo) or higher |
+   | **Health Check Path** | `/health` |
+   | **Port** | `8000` |
+
+4. **Add Environment Variables**:
+   ```
+   HOST=0.0.0.0
+   PORT=8000
+   LOG_LEVEL=INFO
+   ALLOWED_ORIGINS=*
+   ```
+
+5. **Deploy!** - Render will build and deploy automatically
+
+### Option 2: Manual Docker Deploy
+
+```bash
+# Build locally
+docker build -t pneumonia-api .
+
+# Push to Docker Hub
+docker tag pneumonia-api:latest yourusername/pneumonia-api:latest
+docker push yourusername/pneumonia-api:latest
+
+# Then in Render:
+# 1. New → Web Service
+# 2. Select "Deploy an existing image from a registry"
+# 3. Enter: docker.io/yourusername/pneumonia-api:latest
+```
+
+### Render-Specific Notes
+
+| ⚠️ Important | Details |
+|--------------|---------|
+| **Free Tier** | Not recommended - 512MB RAM is insufficient for TensorFlow |
+| **Starter Plan** | Minimum recommended ($7/month, 512MB-2GB RAM) |
+| **Cold Starts** | Starter plan may sleep after inactivity, causing slow first request |
+| **Build Time** | First build takes 10-15 minutes (TensorFlow compilation) |
+| **Disk Space** | Ensure your model file is under 500MB for smoother builds |
+
+### Accessing Your API on Render
+
+Once deployed, your API will be available at:
+```
+https://pneumonia-detection-api.onrender.com
+```
+
+Test it:
+```bash
+# Health check
+curl https://your-app.onrender.com/health
+
+# API docs
+open https://your-app.onrender.com/docs
+
+# Make prediction
+curl -X POST https://your-app.onrender.com/predict \
+  -F "file=@chest_xray.jpg"
 ```
 
 ---
