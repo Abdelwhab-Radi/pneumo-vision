@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شرح مشروع كشف الالتهاب الرئوي</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #0ea5e9;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #d32424;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.8;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            padding: 80px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header .emoji {
+            font-size: 4rem;
+            display: block;
+            margin-bottom: 20px;
+        }
+
+        .header p {
+            font-size: 1.3rem;
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Section */
+        .section {
+            margin-bottom: 50px;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            color: var(--primary);
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(to left, transparent, var(--border));
+        }
+
+        /* Cards Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 30px;
+            border: 1px solid var(--border);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+
+        .card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .card p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        /* Stats */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--bg-card) 0%, rgba(99, 102, 241, 0.1) 100%);
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            margin-top: 8px;
+            font-size: 0.95rem;
+        }
+
+        /* Problems Section */
+        .problem-item {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-right: 4px solid var(--danger);
+            transition: all 0.3s;
+        }
+
+        .problem-item:hover {
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .problem-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .problem-number {
+            background: var(--danger);
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .problem-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .problem-description {
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+
+        .solution-box {
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            border-right: 3px solid var(--success);
+        }
+
+        .solution-label {
+            color: var(--success);
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Timeline */
+        .timeline {
+            position: relative;
+            padding-right: 40px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            right: 10px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(to bottom, var(--primary), var(--secondary));
+            border-radius: 3px;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            right: -36px;
+            top: 25px;
+            width: 14px;
+            height: 14px;
+            background: var(--primary);
+            border-radius: 50%;
+            border: 3px solid var(--bg-dark);
+        }
+
+        .timeline-title {
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--primary);
+        }
+
+        /* Tech Stack */
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .tech-item {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid var(--border);
+            transition: all 0.3s;
+        }
+
+        .tech-item:hover {
+            border-color: var(--primary);
+            transform: scale(1.05);
+        }
+
+        .tech-item span {
+            display: block;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        /* Architecture */
+        .architecture-diagram {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 40px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .flow-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .flow-item {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            padding: 20px 30px;
+            border-radius: 12px;
+            min-width: 150px;
+        }
+
+        .flow-arrow {
+            font-size: 2rem;
+            color: var(--secondary);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 40px 20px;
+            border-top: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .header p {
+                font-size: 1rem;
+            }
+
+            .flow-container {
+                flex-direction: column;
+            }
+
+            .flow-arrow {
+                transform: rotate(90deg);
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card,
+        .problem-item,
+        .timeline-item,
+        .stat-card {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <span class="emoji">🫁</span>
+        <h1>مشروع كشف الالتهاب الرئوي بالذكاء الاصطناعي</h1>
+        <p>نظام ذكي لتحليل صور الأشعة السينية واكتشاف الالتهاب الرئوي باستخدام التعلم العميق</p>
+    </header>
+
+    <div class="container">
+        <!-- Live Demo Section -->
+        <section class="section" style="text-align: center; margin-bottom: 40px;">
+            <a href="https://pneumo-vision-kappa.vercel.app/" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+                      color: white; padding: 20px 50px; border-radius: 50px; font-size: 1.4rem; 
+                      font-weight: 700; text-decoration: none; box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
+                      transition: all 0.3s; border: none;">
+                🚀 جرب التطبيق مباشرة
+            </a>
+            <p style="margin-top: 15px; color: #94a3b8;">اضغط هنا لتجربة نظام كشف الالتهاب الرئوي</p>
+        </section>
+
+        <!-- Project Overview -->
+        <section class="section">
+            <h2 class="section-title">📋 نظرة عامة على المشروع</h2>
+            <div class="cards-grid">
+                <div class="card">
+                    <div class="card-icon">🎯</div>
+                    <h3>الهدف</h3>
+                    <p>بناء نموذج ذكاء اصطناعي يقدر يكتشف الالتهاب الرئوي من صور الأشعة السينية للصدر بدقة عالية تساعد
+                        الأطباء في التشخيص السريع.</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">🧠</div>
+                    <h3>التقنية المستخدمة</h3>
+                    <p>استخدمنا Transfer Learning مع EfficientNet (B0, B3, B4) عشان نستفيد من النماذج المدربة مسبقاً
+                        ونضيف طبقات مخصصة للمشكلة بتاعتنا.</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">🔄</div>
+                    <h3>Ensemble Learning</h3>
+                    <p>جمعنا أكتر من موديل مع بعض (Ensemble) عشان نحصل على أفضل دقة ممكنة - كل موديل بيساهم في القرار
+                        النهائي.</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">🌐</div>
+                    <h3>الـ Deployment</h3>
+                    <p>جهزنا API بـ FastAPI وواجهة مستخدم بـ Streamlit، مع دعم Docker للنشر على Railway, Render, Azure
+                        وغيرهم.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats -->
+        <section class="section">
+            <h2 class="section-title">📊 نتائج الموديل</h2>
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-value">89.3%</div>
+                    <div class="stat-label">الدقة الإجمالية (Accuracy)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">95.2%</div>
+                    <div class="stat-label">ROC-AUC Score</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">88.7%</div>
+                    <div class="stat-label">الحساسية (Sensitivity)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">90.2%</div>
+                    <div class="stat-label">النوعية (Specificity)</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Problems Section -->
+        <section class="section">
+            <h2 class="section-title">⚠️ أهم المشكلات اللي واجهتنا والحلول</h2>
+
+            <div class="problem-item">
+                <div class="problem-header">
+                    <span class="problem-number">1</span>
+                    <span class="problem-title">مشكلة GPU و cuDNN</span>
+                </div>
+                <p class="problem-description">
+                    التدريب كان بيقع بخطأ <code>UNKNOWN: &lt;unknown cudnn status: 5003&gt;</code>.
+                    المشكلة كانت عدم توافق بين TensorFlow 2.20.0 و cuDNN drivers مع كارت NVIDIA GeForce GTX 1070.
+                </p>
+                <div class="solution-box">
+                    <div class="solution-label">✅ الحل</div>
+                    <p>حولنا التدريب لـ CPU فقط باستخدام <code>CUDA_VISIBLE_DEVICES=""</code>. التدريب اشتغل تمام بس
+                        أبطأ شوية (2-3 ساعات بدل دقائق).</p>
+                </div>
+            </div>
+
+            <div class="problem-item">
+                <div class="problem-header">
+                    <span class="problem-number">2</span>
+                    <span class="problem-title">صور تالفة في Dataset</span>
+                </div>
+                <p class="problem-description">
+                    لقينا صور corrupted في الـ dataset كانت بتوقف التدريب وبتعمل errors.
+                    الصور دي كانت بتسبب مشاكل في الـ data pipeline.
+                </p>
+                <div class="solution-box">
+                    <div class="solution-label">✅ الحل</div>
+                    <p>عملنا سكريبت <code>fix_corrupted_images.py</code> يكتشف الصور التالفة ويحركها لفولدر backup. كده
+                        الـ training اشتغل من غير مشاكل.</p>
+                </div>
+            </div>
+
+            <div class="problem-item">
+                <div class="problem-header">
+                    <span class="problem-number">3</span>
+                    <span class="problem-title">Sensitivity منخفضة</span>
+                </div>
+                <p class="problem-description">
+                    الموديل كان بيفوّت حالات مرضية كتير (False Negatives).
+                    في البداية الـ Sensitivity كانت 66% بس - يعني 33% من المرضى ممكن يتفوتوا!
+                </p>
+                <div class="solution-box">
+                    <div class="solution-label">✅ الحل</div>
+                    <p>خفضنا الـ Threshold من 0.5 لـ 0.4، واستخدمنا Ensemble من عدة موديلات، وزودنا الـ augmentation.
+                        وصلنا لـ 88.7% sensitivity.</p>
+                </div>
+            </div>
+
+            <div class="problem-item">
+                <div class="problem-header">
+                    <span class="problem-number">4</span>
+                    <span class="problem-title">مشاكل Docker و Railway</span>
+                </div>
+                <p class="problem-description">
+                    واجهنا أخطاء في بناء Docker image على Railway:
+                    <br>- ملف <code>requirements_api.txt</code> مش موجود
+                    <br>- أسماء packages قديمة ومش متوافقة
+                    <br>- FastAPI module not found
+                </p>
+                <div class="solution-box">
+                    <div class="solution-label">✅ الحل</div>
+                    <p>صلحنا الـ Dockerfile وأضفنا الملفات الناقصة وحدّثنا أسماء الـ packages. كده الـ build اشتغل صح
+                        على Railway.</p>
+                </div>
+            </div>
+
+            <div class="problem-item">
+                <div class="problem-header">
+                    <span class="problem-number">5</span>
+                    <span class="problem-title">TensorFlow Module Errors</span>
+                </div>
+                <p class="problem-description">
+                    ظهرت أخطاء <code>ModuleNotFoundError: No module named 'tensorflow.python'</code>
+                    بسبب مشاكل في الـ installation.
+                </p>
+                <div class="solution-box">
+                    <div class="solution-label">✅ الحل</div>
+                    <p>عملنا reinstall لـ TensorFlow مع الإصدار الصح (<code>tensorflow-cpu</code> للـ deployment)
+                        وأصلحنا الـ imports.</p>
+                </div>
+            </div>
+
+            <div class="problem-item">
+                <div class="problem-header">
+                    <span class="problem-number">6</span>
+                    <span class="problem-title">حجم الصور مش متطابق</span>
+                </div>
+                <p class="problem-description">
+                    الصور جاية بأحجام مختلفة والموديل محتاج حجم ثابت 224×224.
+                    ده كان بيسبب errors في الـ evaluation.
+                </p>
+                <div class="solution-box">
+                    <div class="solution-label">✅ الحل</div>
+                    <p>أضفنا preprocessing layer في الموديل يعمل resize تلقائي لكل الصور، ووحّدنا الـ config في كل
+                        الملفات.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tech Stack -->
+        <section class="section">
+            <h2 class="section-title">🛠️ التقنيات المستخدمة</h2>
+            <div class="tech-grid">
+                <div class="tech-item">
+                    <span>🐍</span>
+                    <div>Python 3.11</div>
+                </div>
+                <div class="tech-item">
+                    <span>🧠</span>
+                    <div>TensorFlow</div>
+                </div>
+                <div class="tech-item">
+                    <span>⚡</span>
+                    <div>FastAPI</div>
+                </div>
+                <div class="tech-item">
+                    <span>🎈</span>
+                    <div>Streamlit</div>
+                </div>
+                <div class="tech-item">
+                    <span>🐳</span>
+                    <div>Docker</div>
+                </div>
+                <div class="tech-item">
+                    <span>📊</span>
+                    <div>EfficientNet</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Architecture -->
+        <section class="section">
+            <h2 class="section-title">🏗️ بنية المشروع</h2>
+            <div class="architecture-diagram">
+                <div class="flow-container">
+                    <div class="flow-item">
+                        <div>📷</div>
+                        <div>صورة أشعة</div>
+                    </div>
+                    <span class="flow-arrow">←</span>
+                    <div class="flow-item">
+                        <div>🔄</div>
+                        <div>Preprocessing</div>
+                    </div>
+                    <span class="flow-arrow">←</span>
+                    <div class="flow-item">
+                        <div>🧠</div>
+                        <div>EfficientNet</div>
+                    </div>
+                    <span class="flow-arrow">←</span>
+                    <div class="flow-item">
+                        <div>📊</div>
+                        <div>Ensemble</div>
+                    </div>
+                    <span class="flow-arrow">←</span>
+                    <div class="flow-item">
+                        <div>✅</div>
+                        <div>التشخيص</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Timeline -->
+        <section class="section">
+            <h2 class="section-title">📅 مراحل المشروع</h2>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-title">1️⃣ إعداد البيئة والبيانات</div>
+                    <p>تجهيز Python environment، تنزيل الـ dataset، ومعالجة الصور التالفة.</p>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-title">2️⃣ بناء وتدريب الموديل</div>
+                    <p>تجربة موديلات مختلفة (B0, B3, B4) مع تقنيات augmentation متنوعة.</p>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-title">3️⃣ تحسين الأداء</div>
+                    <p>استخدام Ensemble learning وتحسين الـ threshold للوصول لأفضل نتائج.</p>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-title">4️⃣ بناء الـ API والواجهة</div>
+                    <p>تطوير FastAPI backend وStreamlit frontend للاستخدام السهل.</p>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-title">5️⃣ الـ Deployment</div>
+                    <p>إعداد Docker وملفات التكوين للنشر على منصات سحابية مختلفة.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Files Structure -->
+        <section class="section">
+            <h2 class="section-title">📁 ملفات المشروع الرئيسية</h2>
+            <div class="cards-grid">
+                <div class="card">
+                    <h3>🧠 model.py</h3>
+                    <p>الملف الرئيسي للتدريب - يحتوي على بناء الموديل، الـ training loop، والـ callbacks.</p>
+                </div>
+                <div class="card">
+                    <h3>⚡ api.py</h3>
+                    <p>FastAPI server للـ REST API - يستقبل الصور ويرجع التشخيص.</p>
+                </div>
+                <div class="card">
+                    <h3>🎈 streamlit_app.py</h3>
+                    <p>واجهة المستخدم الرسومية - سهلة الاستخدام للأطباء.</p>
+                </div>
+                <div class="card">
+                    <h3>📊 evaluate_model.py</h3>
+                    <p>سكريبت تقييم الموديل وإنتاج التقارير والرسومات البيانية.</p>
+                </div>
+                <div class="card">
+                    <h3>🔄 ensemble_predict.py</h3>
+                    <p>دمج عدة موديلات للحصول على تنبؤات أكثر دقة.</p>
+                </div>
+                <div class="card">
+                    <h3>🐳 Dockerfile</h3>
+                    <p>ملف Docker للـ containerization والنشر السحابي.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Conclusion -->
+        <section class="section">
+            <h2 class="section-title">🎯 الخلاصة</h2>
+            <div class="card"
+                style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(14, 165, 233, 0.1) 100%);">
+                <p style="font-size: 1.1rem; line-height: 2;">
+                    المشروع ده مثال عملي على استخدام الذكاء الاصطناعي في المجال الطبي.
+                    واجهنا تحديات كتير من مشاكل الـ GPU لحد مشاكل الـ deployment،
+                    بس في النهاية وصلنا لنموذج بدقة <strong>89.3%</strong> وROC-AUC <strong>95.2%</strong>.
+                    <br><br>
+                    النموذج ممكن يستخدم كأداة مساعدة للأطباء في التشخيص السريع،
+                    مع التأكيد إنه مش بديل عن الخبرة الطبية.
+                    <br><br>
+                    ⚠️ <strong>تنويه:</strong> المشروع ده للأغراض التعليمية ومش للاستخدام الطبي الفعلي بدون إشراف طبي.
+                </p>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>🫁 مشروع كشف الالتهاب الرئوي - تم إنشاؤه في ديسمبر 2025</p>
+        <p style="margin-top: 10px;">Built with ❤️ using Python, TensorFlow & FastAPI</p>
+    </footer>
+</body>
+
+</html>
