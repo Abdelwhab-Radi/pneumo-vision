@@ -276,6 +276,33 @@ def main():
     st.markdown('<h1 class="main-header">🫁 Pneumonia Detection AI</h1>', unsafe_allow_html=True)
     st.markdown('<p class="sub-header">Upload a chest X-ray image for instant AI-powered diagnosis</p>', unsafe_allow_html=True)
     
+    # Prominent Accuracy Banner
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(14, 165, 233, 0.2) 100%); 
+                border-radius: 15px; padding: 20px; margin-bottom: 25px; border: 1px solid rgba(99, 102, 241, 0.3);
+                text-align: center;">
+        <div style="display: flex; justify-content: center; gap: 40px; flex-wrap: wrap;">
+            <div>
+                <span style="font-size: 2rem; font-weight: bold; color: #10b981;">89.3%</span>
+                <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 0.9rem;">Accuracy</p>
+            </div>
+            <div>
+                <span style="font-size: 2rem; font-weight: bold; color: #6366f1;">95.2%</span>
+                <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 0.9rem;">ROC-AUC</p>
+            </div>
+            <div>
+                <span style="font-size: 2rem; font-weight: bold; color: #f59e0b;">88.7%</span>
+                <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 0.9rem;">Sensitivity</p>
+            </div>
+            <div>
+                <span style="font-size: 2rem; font-weight: bold; color: #ec4899;">91.1%</span>
+                <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 0.9rem;">F1 Score</p>
+            </div>
+        </div>
+        <p style="color: #64748b; margin-top: 15px; font-size: 0.85rem;">🧠 Powered by EfficientNet Deep Learning | © 2026</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
     # Load model (now returns img_size too)
     model, model_path, img_size = load_model()
     
