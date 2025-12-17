@@ -430,7 +430,7 @@ def main():
     with col1:
         st.markdown("""
         <div class="metric-card">
-            <div class="metric-value">94.2%</div>
+            <div class="metric-value">89.3%</div>
             <div class="metric-label">Accuracy</div>
         </div>
         """, unsafe_allow_html=True)
@@ -438,23 +438,23 @@ def main():
     with col2:
         st.markdown("""
         <div class="metric-card">
-            <div class="metric-value">93.8%</div>
-            <div class="metric-label">Precision</div>
+            <div class="metric-value">95.2%</div>
+            <div class="metric-label">ROC-AUC</div>
         </div>
         """, unsafe_allow_html=True)
     
     with col3:
         st.markdown("""
         <div class="metric-card">
-            <div class="metric-value">95.1%</div>
-            <div class="metric-label">Recall</div>
+            <div class="metric-value">88.7%</div>
+            <div class="metric-label">Sensitivity</div>
         </div>
         """, unsafe_allow_html=True)
     
     with col4:
         st.markdown("""
         <div class="metric-card">
-            <div class="metric-value">94.4%</div>
+            <div class="metric-value">91.1%</div>
             <div class="metric-label">F1 Score</div>
         </div>
         """, unsafe_allow_html=True)
