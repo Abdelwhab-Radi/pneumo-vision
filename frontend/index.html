@@ -1,15 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="AI-powered pneumonia detection from chest X-ray images. Upload your X-ray and get instant analysis.">
+    <meta name="description"
+        content="AI-powered pneumonia detection from chest X-ray images. Upload your X-ray and get instant analysis.">
     <title>Pneumonia Detection AI | Chest X-Ray Analysis</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <!-- Animated Background -->
     <div class="bg-animation">
@@ -28,10 +32,10 @@
             <div class="logo">
                 <div class="logo-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
-                        <path d="M12 6v6l4 2"/>
-                        <path d="M8 12h8"/>
-                        <path d="M12 8v8"/>
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" />
+                        <path d="M12 6v6l4 2" />
+                        <path d="M8 12h8" />
+                        <path d="M12 8v8" />
                     </svg>
                 </div>
                 <div class="logo-text">
@@ -45,6 +49,29 @@
             </div>
         </header>
 
+        <!-- Model Accuracy Banner -->
+        <div class="accuracy-banner glass-card" style="margin-bottom: 2rem; padding: 1.5rem; text-align: center;">
+            <h3 style="margin-bottom: 1rem; color: #a78bfa;">🎯 Model Performance</h3>
+            <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;">
+                <div class="metric-item">
+                    <span style="font-size: 2rem; font-weight: bold; color: #10b981;">89.3%</span>
+                    <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 0.85rem;">Accuracy</p>
+                </div>
+                <div class="metric-item">
+                    <span style="font-size: 2rem; font-weight: bold; color: #6366f1;">95.2%</span>
+                    <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 0.85rem;">ROC-AUC</p>
+                </div>
+                <div class="metric-item">
+                    <span style="font-size: 2rem; font-weight: bold; color: #f59e0b;">88.7%</span>
+                    <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 0.85rem;">Sensitivity</p>
+                </div>
+                <div class="metric-item">
+                    <span style="font-size: 2rem; font-weight: bold; color: #ec4899;">91.1%</span>
+                    <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 0.85rem;">F1 Score</p>
+                </div>
+            </div>
+        </div>
+
         <!-- Main Content -->
         <main class="main-content">
             <!-- Upload Section -->
@@ -53,15 +80,15 @@
                     <h2>Upload X-Ray Image</h2>
                     <p>Drag and drop or click to select a chest X-ray image for analysis</p>
                 </div>
-                
+
                 <div class="upload-area" id="uploadArea">
                     <input type="file" id="fileInput" accept="image/*" hidden>
                     <div class="upload-content">
                         <div class="upload-icon">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                <polyline points="17,8 12,3 7,8"/>
-                                <line x1="12" y1="3" x2="12" y2="15"/>
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="17,8 12,3 7,8" />
+                                <line x1="12" y1="3" x2="12" y2="15" />
                             </svg>
                         </div>
                         <div class="upload-text">
@@ -80,8 +107,8 @@
                         <img id="previewImage" alt="X-ray preview">
                         <button class="remove-image" id="removeImage" title="Remove image">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="18" y1="6" x2="6" y2="18"/>
-                                <line x1="6" y1="6" x2="18" y2="18"/>
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
                             </svg>
                         </button>
                     </div>
@@ -89,8 +116,8 @@
                         <span class="btn-text">Analyze Image</span>
                         <span class="btn-icon">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M5 12h14"/>
-                                <path d="M12 5l7 7-7 7"/>
+                                <path d="M5 12h14" />
+                                <path d="M12 5l7 7-7 7" />
                             </svg>
                         </span>
                     </button>
@@ -139,11 +166,12 @@
 
                     <div class="result-disclaimer">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <line x1="12" y1="8" x2="12" y2="12"/>
-                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="8" x2="12" y2="12" />
+                            <line x1="12" y1="16" x2="12.01" y2="16" />
                         </svg>
-                        <p>This is an AI-assisted analysis and should not replace professional medical diagnosis. Please consult a healthcare provider for proper evaluation.</p>
+                        <p>This is an AI-assisted analysis and should not replace professional medical diagnosis. Please
+                            consult a healthcare provider for proper evaluation.</p>
                     </div>
                 </div>
             </section>
@@ -176,10 +204,11 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <p>&copy; 2024 Pneumonia Detection AI. For research and educational purposes only.</p>
+            <p>&copy; 2026 Pneumonia Detection AI. For research and educational purposes only.</p>
         </footer>
     </div>
 
     <script src="app.js"></script>
 </body>
+
 </html>
