@@ -51,6 +51,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy application code
 COPY config.py .
 COPY api.py .
+COPY xray_validator.py .
 
 # Copy trained model and configuration
 COPY results/models/ ./results/models/
