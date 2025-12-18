@@ -32,6 +32,10 @@ def _load_tensorflow():
     """Lazy load TensorFlow to avoid import delays"""
     global _tf, _keras, _mobilenet
     if _tf is None:
+        import os
+        # Force CPU to avoid cuDNN errors
+        os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+        
         import tensorflow as tf
         from tensorflow import keras
         from tensorflow.keras.applications import mobilenet_v2
@@ -68,12 +72,12 @@ class XrayValidator:
     valid chest X-ray images are processed for pneumonia detection.
     """
     
-    # Validation thresholds
-    GRAYSCALE_THRESHOLD = 0.85  # How close to grayscale the image should be
-    MIN_CONTRAST_THRESHOLD = 30  # Minimum standard deviation in pixel values
-    MAX_CONTRAST_THRESHOLD = 120  # Maximum standard deviation (avoid over-saturated)
-    ASPECT_RATIO_MIN = 0.7  # Minimum aspect ratio for medical images
-    ASPECT_RATIO_MAX = 1.5  # Maximum aspect ratio for medical images
+    # Validation thresholds - STRICTER settings
+    GRAYSCALE_THRESHOLD = 0.75  # Lowered: How close to grayscale the image should be
+    MIN_CONTRAST_THRESHOLD = 25  # Lowered: Minimum standard deviation in pixel values
+    MAX_CONTRAST_THRESHOLD = 130  # Raised: Maximum standard deviation
+    ASPECT_RATIO_MIN = 0.6  # More permissive
+    ASPECT_RATIO_MAX = 1.6  # More permissive
     XRAY_CONFIDENCE_THRESHOLD = 0.3  # Minimum confidence for X-ray classification
     
     # ImageNet classes related to medical/X-ray imagery
@@ -227,9 +231,10 @@ class XrayValidator:
             issues.append("no_dark_regions")
             confidence -= 0.2
         
-        # Determine result
+        # Determine result - STRICTER: reject if ANY significant issue
         confidence = max(0, confidence)
-        is_valid = len(issues) <= 1 and confidence >= 0.5
+        # Changed: Only valid if NO issues or just aspect ratio issue with high confidence
+        is_valid = (len(issues) == 0) or (len(issues) == 1 and "unusual_aspect_ratio" in issues and confidence >= 0.7)
         
         if is_valid:
             message_en = "Image characteristics are consistent with chest X-ray"
@@ -348,9 +353,10 @@ class XrayValidator:
                 "model_predictions": model_predictions
             }
             
-            # Determine final result
-            if not char_valid and char_confidence < 0.3:
-                # Clearly not an X-ray based on characteristics
+            # Determine final result - STRICTER LOGIC
+            # If characteristics check failed (not valid), reject the image
+            if not char_valid:
+                # Reject based on characteristics - colorful images, screenshots, etc.
                 return ValidationResult(
                     is_valid=False,
                     confidence=char_confidence,
