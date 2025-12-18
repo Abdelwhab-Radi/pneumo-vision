@@ -76,7 +76,7 @@ logger = logging.getLogger(__name__)
 
 
 class PneumoniaDetector:
-    """Pneumonia detection model wrapper for production""
+    """Pneumonia detection model wrapper for production"""
     
     # Confidence threshold for valid predictions
     PREDICTION_CONFIDENCE_THRESHOLD = 0.55
@@ -252,7 +252,7 @@ start_time = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown events"""
-    global detector, start_time
+    global detector, xray_validator, start_time
     start_time = datetime.now()
     
     # Use configuration-based paths
@@ -380,7 +380,10 @@ async def predict_image(file: UploadFile = File(...)):
         
         # Step 1 & 2: Validate image is a chest X-ray
         if xray_validator is not None:
+            logger.info("Running X-ray validation...")
             validation_result = xray_validator.validate(image_bytes)
+            logger.info(f"Validation result: is_valid={validation_result.is_valid}, confidence={validation_result.confidence}")
+            logger.info(f"Characteristics: {validation_result.validation_details.get('characteristics', {})}")
             
             if not validation_result.is_valid:
                 logger.warning(f"Image validation failed: {validation_result.message_en}")
@@ -395,6 +398,8 @@ async def predict_image(file: UploadFile = File(...)):
                         "details": validation_result.validation_details
                     }
                 )
+        else:
+            logger.warning("X-ray validator is None!")
         
         # Make prediction
         result = detector.predict(image_bytes)
