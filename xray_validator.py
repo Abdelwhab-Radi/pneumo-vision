@@ -91,11 +91,77 @@ class XrayValidator:
     }
     
     # Classes that definitely indicate non-X-ray images
+    # This comprehensive list covers most ImageNet categories that are NOT medical images
     REJECT_KEYWORDS = [
-        'person', 'man', 'woman', 'boy', 'girl', 'face', 'head',
-        'dog', 'cat', 'car', 'house', 'tree', 'flower', 'food',
-        'phone', 'computer', 'building', 'landscape', 'selfie',
-        'portrait', 'animal', 'pet', 'outdoor', 'indoor'
+        # People and body parts
+        'person', 'man', 'woman', 'boy', 'girl', 'face', 'head', 'hand', 'people',
+        'baby', 'child', 'adult', 'human', 'selfie', 'portrait', 'groom', 'bride',
+        
+        # Clothing and accessories
+        'suit', 'tie', 'windsor', 'shirt', 'dress', 'jacket', 'coat', 'jean',
+        'trouser', 'shoe', 'boot', 'hat', 'cap', 'glasses', 'sunglasses', 'watch',
+        'bag', 'purse', 'backpack', 'uniform', 'jersey', 'vest', 'sweater', 'hoodie',
+        'sock', 'glove', 'scarf', 'belt', 'wallet', 'umbrella', 'mask',
+        
+        # Animals
+        'dog', 'cat', 'bird', 'fish', 'horse', 'cow', 'sheep', 'pig', 'chicken',
+        'animal', 'pet', 'lion', 'tiger', 'bear', 'elephant', 'monkey', 'snake',
+        'insect', 'butterfly', 'bee', 'spider', 'rabbit', 'mouse', 'hamster',
+        'turtle', 'frog', 'dolphin', 'whale', 'shark', 'duck', 'goose',
+        
+        # Vehicles
+        'car', 'truck', 'bus', 'motorcycle', 'bicycle', 'plane', 'airplane',
+        'boat', 'ship', 'train', 'vehicle', 'taxi', 'ambulance', 'van',
+        
+        # Buildings and places  
+        'house', 'building', 'church', 'mosque', 'temple', 'castle', 'tower',
+        'bridge', 'street', 'road', 'park', 'garden', 'beach', 'mountain',
+        'landscape', 'outdoor', 'indoor', 'room', 'office', 'restaurant', 'shop',
+        'stadium', 'school', 'hospital', 'hotel', 'airport', 'station',
+        
+        # Technology and electronics
+        'phone', 'computer', 'laptop', 'desktop', 'monitor', 'screen', 'keyboard',
+        'mouse', 'tablet', 'camera', 'television', 'tv', 'radio', 'speaker',
+        'headphone', 'microphone', 'printer', 'scanner', 'projector', 'remote',
+        'notebook', 'ipod', 'cellular', 'modem', 'router', 'disk', 'hard_disc',
+        
+        # Food and drinks
+        'food', 'fruit', 'vegetable', 'meat', 'bread', 'pizza', 'burger', 'cake',
+        'ice_cream', 'coffee', 'tea', 'wine', 'beer', 'bottle', 'cup', 'plate',
+        'bowl', 'fork', 'knife', 'spoon', 'restaurant', 'meal', 'dinner', 'lunch',
+        'apple', 'banana', 'orange', 'grape', 'strawberry', 'chocolate', 'candy',
+        
+        # Furniture and household items
+        'chair', 'table', 'desk', 'sofa', 'couch', 'bed', 'lamp', 'clock',
+        'mirror', 'window', 'door', 'curtain', 'carpet', 'pillow', 'blanket',
+        'cabinet', 'shelf', 'drawer', 'wardrobe', 'bookcase', 'vase', 'pot',
+        
+        # Nature
+        'tree', 'flower', 'plant', 'grass', 'leaf', 'forest', 'jungle', 'ocean',
+        'sea', 'river', 'lake', 'waterfall', 'sky', 'cloud', 'sun', 'moon', 'star',
+        'rock', 'sand', 'snow', 'rain', 'sunrise', 'sunset',
+        
+        # Sports and recreation
+        'ball', 'football', 'basketball', 'tennis', 'golf', 'baseball', 'soccer',
+        'volleyball', 'swimming', 'running', 'gym', 'racket', 'bat', 'helmet',
+        
+        # Music and art
+        'guitar', 'piano', 'violin', 'drum', 'music', 'painting', 'sculpture',
+        'drawing', 'art', 'museum', 'gallery', 'stage', 'theater', 'concert',
+        
+        # Office and school items
+        'book', 'paper', 'pen', 'pencil', 'eraser', 'ruler', 'scissor', 'stapler',
+        'folder', 'binder', 'envelope', 'stamp', 'calculator', 'calendar', 'file',
+        
+        # Miscellaneous objects
+        'toy', 'doll', 'teddy', 'balloon', 'gift', 'candle', 'flag', 'sign',
+        'plastic', 'rubber', 'metal', 'wood', 'glass', 'fabric', 'leather',
+        'box', 'container', 'basket', 'bucket', 'tray', 'jar', 'can',
+        
+        # More specific ImageNet classes that appeared in tests
+        'loafer', 'clog', 'sandal', 'slipper', 'maillot', 'bikini', 'miniskirt',
+        'poncho', 'cardigan', 'lab_coat', 'apron', 'pajama', 'bow_tie', 'bolo_tie',
+        'stole', 'feather_boa', 'suspender', 'brassiere', 'diaper', 'swimming_trunks'
     ]
     
     def __init__(self, use_pretrained_model: bool = True):
@@ -353,7 +419,7 @@ class XrayValidator:
                 "model_predictions": model_predictions
             }
             
-            # Determine final result - STRICTER LOGIC
+            # Determine final result - SMART LOGIC
             # If characteristics check failed (not valid), reject the image
             if not char_valid:
                 # Reject based on characteristics - colorful images, screenshots, etc.
@@ -365,8 +431,22 @@ class XrayValidator:
                     validation_details=validation_details
                 )
             
-            if not model_valid:
-                # Pre-trained model identified non-X-ray content
+            # SMART HANDLING: For truly grayscale images with X-ray characteristics,
+            # trust characteristics over MobileNet (which often misclassifies X-rays)
+            grayscale_score = characteristics.get("grayscale_score", 0)
+            dark_ratio = characteristics.get("dark_pixel_ratio", 0)
+            
+            # If image is truly grayscale (>0.95) with significant dark regions (X-ray hallmark),
+            # trust characteristics and accept even if MobileNet rejects
+            is_true_grayscale_xray = (
+                grayscale_score >= 0.95 and 
+                dark_ratio >= 0.1 and 
+                char_valid and
+                char_confidence >= 0.8
+            )
+            
+            if not model_valid and not is_true_grayscale_xray:
+                # Pre-trained model identified non-X-ray content AND it's not a true grayscale X-ray
                 return ValidationResult(
                     is_valid=False,
                     confidence=model_confidence,
@@ -376,7 +456,12 @@ class XrayValidator:
                 )
             
             # Image passed validation
-            combined_confidence = (char_confidence + model_confidence) / 2
+            if is_true_grayscale_xray and not model_valid:
+                # Accepted based on strong grayscale characteristics
+                combined_confidence = char_confidence * 0.9  # Slightly lower confidence
+                validation_details["override_reason"] = "Accepted based on strong grayscale X-ray characteristics"
+            else:
+                combined_confidence = (char_confidence + model_confidence) / 2
             
             return ValidationResult(
                 is_valid=True,
