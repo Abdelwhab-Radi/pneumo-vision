@@ -248,14 +248,15 @@ async function handleAnalyze() {
             body: formData
         });
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.detail || `HTTP ${response.status}`);
-        }
-
         const result = await response.json();
         const endTime = performance.now();
         const duration = ((endTime - startTime) / 1000).toFixed(2);
+
+        // Check if it's a validation error (invalid X-ray)
+        if (!response.ok || result.error === 'invalid_image') {
+            displayValidationError(result);
+            return;
+        }
 
         // Display results
         displayResults(result, duration);
@@ -267,6 +268,106 @@ async function handleAnalyze() {
     } finally {
         elements.analyzeBtn.disabled = false;
     }
+}
+
+/**
+ * Display validation error when image is not a valid X-ray
+ */
+function displayValidationError(result) {
+    // Hide loading, show results
+    elements.loadingState.style.display = 'none';
+    elements.resultsContent.style.display = 'block';
+
+    // Set analysis time
+    elements.analysisTime.textContent = 'Validation Failed';
+
+    // Set error badge
+    elements.diagnosisBadge.className = 'diagnosis-badge invalid';
+    elements.diagnosisBadge.querySelector('.diagnosis-icon').textContent = '🚫';
+    elements.diagnosisText.textContent = 'Invalid Image';
+
+    // Clear confidence bar
+    elements.confidenceBar.style.width = '0%';
+    elements.confidenceValue.textContent = '0%';
+
+    // Show error message
+    elements.probabilityItems.innerHTML = `
+        <div class="validation-error">
+            <div class="error-icon">⚠️</div>
+            <div class="error-title">This is not a valid Chest X-ray</div>
+            <div class="error-message">${result.message || 'Please upload a chest X-ray image.'}</div>
+            <div class="error-message-ar" dir="rtl">${result.message_ar || 'من فضلك ارفع صورة أشعة صدر.'}</div>
+            <div class="error-hint">
+                <strong>Accepted images:</strong>
+                <ul>
+                    <li>Chest X-ray (PA or AP view)</li>
+                    <li>Grayscale medical images</li>
+                    <li>Standard radiograph formats</li>
+                </ul>
+            </div>
+        </div>
+    `;
+
+    // Add validation error styles if not exists
+    if (!document.querySelector('style[data-validation]')) {
+        const style = document.createElement('style');
+        style.setAttribute('data-validation', 'true');
+        style.textContent = `
+            .diagnosis-badge.invalid {
+                background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
+                border: 2px solid rgba(255, 107, 107, 0.3);
+            }
+            .validation-error {
+                text-align: center;
+                padding: 24px;
+                background: rgba(255, 107, 107, 0.1);
+                border-radius: 12px;
+                border: 1px solid rgba(255, 107, 107, 0.3);
+            }
+            .validation-error .error-icon {
+                font-size: 48px;
+                margin-bottom: 16px;
+            }
+            .validation-error .error-title {
+                font-size: 18px;
+                font-weight: 600;
+                color: #ff6b6b;
+                margin-bottom: 12px;
+            }
+            .validation-error .error-message {
+                color: rgba(255, 255, 255, 0.8);
+                margin-bottom: 8px;
+                line-height: 1.5;
+            }
+            .validation-error .error-message-ar {
+                color: rgba(255, 255, 255, 0.7);
+                font-size: 14px;
+                margin-bottom: 16px;
+                font-style: italic;
+            }
+            .validation-error .error-hint {
+                text-align: left;
+                background: rgba(0, 0, 0, 0.2);
+                padding: 16px;
+                border-radius: 8px;
+                margin-top: 16px;
+            }
+            .validation-error .error-hint strong {
+                color: var(--color-success);
+            }
+            .validation-error .error-hint ul {
+                margin: 8px 0 0 20px;
+                color: rgba(255, 255, 255, 0.7);
+            }
+            .validation-error .error-hint li {
+                margin: 4px 0;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Scroll to results
+    elements.resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /**
@@ -311,6 +412,44 @@ function displayResults(result, duration) {
             `;
 
             elements.probabilityItems.innerHTML += itemHtml;
+        }
+    }
+
+    // Check for confidence warning
+    if (result.confidence_warning) {
+        const warningHtml = `
+            <div class="confidence-warning">
+                <span class="warning-icon">⚠️</span>
+                <span class="warning-text">${result.confidence_warning_message || 'Low confidence in prediction'}</span>
+            </div>
+        `;
+        elements.probabilityItems.innerHTML += warningHtml;
+
+        // Add warning styles if not exists
+        if (!document.querySelector('style[data-confidence-warning]')) {
+            const style = document.createElement('style');
+            style.setAttribute('data-confidence-warning', 'true');
+            style.textContent = `
+                .confidence-warning {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 12px 16px;
+                    background: rgba(251, 191, 36, 0.15);
+                    border: 1px solid rgba(251, 191, 36, 0.3);
+                    border-radius: 8px;
+                    margin-top: 16px;
+                    color: #fbbf24;
+                }
+                .confidence-warning .warning-icon {
+                    font-size: 20px;
+                }
+                .confidence-warning .warning-text {
+                    font-size: 13px;
+                    line-height: 1.4;
+                }
+            `;
+            document.head.appendChild(style);
         }
     }
 

@@ -43,6 +43,14 @@ import json
 import logging
 from datetime import datetime
 
+# Import X-ray validator
+try:
+    from xray_validator import XrayValidator, get_validator
+    XRAY_VALIDATION_AVAILABLE = True
+except ImportError:
+    XRAY_VALIDATION_AVAILABLE = False
+    print("Warning: xray_validator not found. Image validation disabled.")
+
 # Import configuration
 try:
     from config import settings
@@ -68,7 +76,10 @@ logger = logging.getLogger(__name__)
 
 
 class PneumoniaDetector:
-    """Pneumonia detection model wrapper for production"""
+    """Pneumonia detection model wrapper for production""
+    
+    # Confidence threshold for valid predictions
+    PREDICTION_CONFIDENCE_THRESHOLD = 0.55
     
     def __init__(self, model_path: str, config_path: str = None):
         """
@@ -232,8 +243,9 @@ class PneumoniaDetector:
         return results
 
 
-# Global detector instance
+# Global instances
 detector = None
+xray_validator = None
 start_time = None
 
 
@@ -253,6 +265,16 @@ async def lifespan(app: FastAPI):
     
     try:
         detector = PneumoniaDetector(model_path, config_path)
+        logger.info("✓ Pneumonia detector ready")
+        
+        # Initialize X-ray validator
+        if XRAY_VALIDATION_AVAILABLE:
+            xray_validator = get_validator()
+            logger.info("✓ X-ray image validator ready")
+        else:
+            xray_validator = None
+            logger.warning("⚠ X-ray validation disabled (module not found)")
+        
         logger.info("✓ API ready to serve predictions")
     except FileNotFoundError as e:
         logger.error(f"Model file not found: {e}")
@@ -333,11 +355,14 @@ async def predict_image(file: UploadFile = File(...)):
     """
     Predict pneumonia from a single chest X-ray image
     
+    This endpoint now includes validation to ensure the uploaded image
+    is a valid chest X-ray before making predictions.
+    
     Args:
-        file: Image file (JPEG, PNG, etc.)
+        file: Image file (JPEG, PNG, etc.) - must be a chest X-ray
         
     Returns:
-        Prediction result with confidence scores
+        Prediction result with confidence scores, or validation error
     """
     if detector is None:
         raise HTTPException(status_code=503, detail="Model not initialized")
@@ -353,8 +378,42 @@ async def predict_image(file: UploadFile = File(...)):
         # Read image bytes
         image_bytes = await file.read()
         
+        # Step 1 & 2: Validate image is a chest X-ray
+        if xray_validator is not None:
+            validation_result = xray_validator.validate(image_bytes)
+            
+            if not validation_result.is_valid:
+                logger.warning(f"Image validation failed: {validation_result.message_en}")
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "error": "invalid_image",
+                        "is_valid_xray": False,
+                        "message": validation_result.message_en,
+                        "message_ar": validation_result.message_ar,
+                        "validation_confidence": validation_result.confidence,
+                        "details": validation_result.validation_details
+                    }
+                )
+        
         # Make prediction
         result = detector.predict(image_bytes)
+        
+        # Step 3: Check prediction confidence (Layer 3 validation)
+        if xray_validator is not None:
+            prediction_confidence = result.get('confidence', 0)
+            is_confident, conf_msg_en, conf_msg_ar = xray_validator.validate_prediction_confidence(
+                prediction_confidence,
+                threshold=detector.PREDICTION_CONFIDENCE_THRESHOLD
+            )
+            
+            if not is_confident:
+                result['confidence_warning'] = True
+                result['confidence_warning_message'] = conf_msg_en
+                result['confidence_warning_message_ar'] = conf_msg_ar
+        
+        # Add validation status to response
+        result['is_valid_xray'] = True
         
         return JSONResponse(content=result)
         

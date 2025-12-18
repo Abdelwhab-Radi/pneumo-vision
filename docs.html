@@ -554,6 +554,43 @@
                         الملفات.</p>
                 </div>
             </div>
+
+            <div class="problem-item" style="border-right-color: #f59e0b;">
+                <div class="problem-header">
+                    <span class="problem-number" style="background: #f59e0b;">7</span>
+                    <span class="problem-title">🆕 الموديل بيقبل أي صورة!</span>
+                </div>
+                <p class="problem-description">
+                    اكتشفنا إن الموديل كان بيقبل <strong>أي صورة</strong> (حتى صور الأشخاص أو المناظر الطبيعية)
+                    وبيدي نتيجة تشخيص! ده خطير جداً لأن الموديل مفروض يستقبل صور أشعة الصدر فقط.
+                    <br><br>
+                    <strong>المشكلة:</strong>
+                    <br>• لو حد رفع صورة سيلفي، الموديل هيقول "NORMAL" أو "PNEUMONIA"
+                    <br>• ده ممكن يضلل المستخدمين ويدي نتائج خاطئة
+                    <br>• مفيش أي validation على نوع الصورة المرفوعة
+                </p>
+                <div class="solution-box">
+                    <div class="solution-label">✅ الحل: نظام التحقق ثلاثي الطبقات</div>
+                    <p>
+                        بنينا ملف <code>xray_validator.py</code> بنظام validation متعدد الطبقات:
+                        <br><br>
+                        <strong>🔹 الطبقة الأولى - تحليل خصائص الصورة:</strong>
+                        <br>• فحص نسبة الـ Grayscale (أشعة X-ray عادةً grayscale)
+                        <br>• تحليل الـ Histogram والـ Contrast
+                        <br>• التحقق من Aspect Ratio
+                        <br><br>
+                        <strong>🔹 الطبقة التانية - Pre-trained Model:</strong>
+                        <br>• استخدام MobileNetV2 للتصنيف
+                        <br>• لو الموديل اكتشف "person", "selfie", "dog" الخ → رفض الصورة
+                        <br><br>
+                        <strong>🔹 الطبقة التالتة - Confidence Threshold:</strong>
+                        <br>• لو الـ prediction confidence منخفض جداً → تحذير للمستخدم
+                        <br><br>
+                        دلوقتي لو حد رفع صورة مش أشعة صدر، هيشوف رسالة بالعربي والإنجليزي:
+                        <br><em>"الصورة تبدو صورة ملونة وليست أشعة. من فضلك ارفع صورة أشعة صدر."</em>
+                    </p>
+                </div>
+            </div>
         </section>
 
         <!-- Tech Stack -->
@@ -594,7 +631,12 @@
                 <div class="flow-container">
                     <div class="flow-item">
                         <div>📷</div>
-                        <div>صورة أشعة</div>
+                        <div>رفع صورة</div>
+                    </div>
+                    <span class="flow-arrow">←</span>
+                    <div class="flow-item" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                        <div>🔍</div>
+                        <div>X-ray Validation</div>
                     </div>
                     <span class="flow-arrow">←</span>
                     <div class="flow-item">
@@ -612,11 +654,15 @@
                         <div>Ensemble</div>
                     </div>
                     <span class="flow-arrow">←</span>
-                    <div class="flow-item">
+                    <div class="flow-item" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
                         <div>✅</div>
                         <div>التشخيص</div>
                     </div>
                 </div>
+                <p style="margin-top: 20px; color: var(--text-secondary); font-size: 0.9rem;">
+                    🆕 <strong>جديد:</strong> خطوة X-ray Validation بتتأكد إن الصورة المرفوعة هي أشعة صدر فعلاً قبل
+                    التشخيص
+                </p>
             </div>
         </section>
 
@@ -674,6 +720,12 @@
                 <div class="card">
                     <h3>🐳 Dockerfile</h3>
                     <p>ملف Docker للـ containerization والنشر السحابي.</p>
+                </div>
+                <div class="card" style="border: 2px solid #f59e0b;">
+                    <h3>🔍 xray_validator.py <span
+                            style="background: #f59e0b; color: black; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; margin-right: 5px;">جديد</span>
+                    </h3>
+                    <p>نظام التحقق من صور الأشعة - يتأكد إن الصورة المرفوعة هي أشعة صدر فعلاً قبل التشخيص.</p>
                 </div>
             </div>
         </section>
