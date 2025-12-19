@@ -340,6 +340,10 @@ class XrayValidator:
         """
         Validate image using MobileNetV2 classification.
         
+        NEW APPROACH: Reject ANY image that MobileNet can recognize.
+        Real chest X-rays look abstract and don't match ImageNet categories.
+        If MobileNet is confident about what an image is, it's NOT an X-ray.
+        
         Returns:
             Tuple of (is_valid, confidence, message_en, message_ar, predictions)
         """
@@ -369,35 +373,27 @@ class XrayValidator:
             predictions = self.mobilenet_model.predict(img_array, verbose=0)
             decoded = self.decode_predictions(predictions, top=5)[0]
             
-            # Check if any top predictions indicate non-X-ray content
+            # Get top prediction
             top_predictions = {}
-            is_rejected = False
-            rejected_class = None
-            
             for class_id, class_name, prob in decoded:
                 top_predictions[class_name] = float(prob)
-                
-                # Check if this is a clearly non-X-ray class
-                class_lower = class_name.lower()
-                for reject_keyword in self.REJECT_KEYWORDS:
-                    if reject_keyword in class_lower:
-                        if prob > 0.1:  # If confidence > 10% for rejected class
-                            is_rejected = True
-                            rejected_class = class_name
-                            break
-                
-                if is_rejected:
-                    break
             
-            if is_rejected:
+            # NEW STRICT LOGIC: 
+            # If MobileNet recognizes ANYTHING with >5% confidence, reject it!
+            # Real X-rays look abstract and MobileNet gives low/random confidence
+            top_class_name, top_prob = decoded[0][1], decoded[0][2]
+            
+            # Threshold: If top prediction > 5%, the image is recognizable = NOT an X-ray
+            RECOGNITION_THRESHOLD = 0.05
+            
+            if top_prob > RECOGNITION_THRESHOLD:
                 confidence = 0.0
-                message_en = f"This appears to be a '{rejected_class}' image, not a chest X-ray. Please upload only chest X-ray images."
-                message_ar = f"هذه الصورة تبدو '{rejected_class}' وليست أشعة صدر. من فضلك ارفع صور أشعة الصدر فقط."
+                message_en = f"This image was recognized as '{top_class_name}' ({top_prob:.1%} confidence). Please upload only chest X-ray images."
+                message_ar = f"تم التعرف على هذه الصورة كـ '{top_class_name}' (ثقة {top_prob:.1%}). من فضلك ارفع صور أشعة الصدر فقط."
                 return False, confidence, message_en, message_ar, top_predictions
             
-            # If not clearly rejected, consider it potentially valid
-            # X-rays often get classified as abstract patterns
-            return True, 0.7, "", "", top_predictions
+            # If MobileNet can't recognize it (low confidence), it might be an X-ray
+            return True, 0.8, "", "", top_predictions
             
         except Exception as e:
             logger.warning(f"Pre-trained model validation failed: {e}")
