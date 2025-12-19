@@ -571,110 +571,168 @@
             <h2 class="section-title lang-ar">⚠️ أهم المشكلات اللي واجهتنا والحلول</h2>
             <h2 class="section-title lang-en">⚠️ Key Challenges We Faced & Solutions</h2>
 
+            <!-- Problem 1 -->
             <div class="problem-item">
                 <div class="problem-header">
                     <span class="problem-number">1</span>
-                    <span class="problem-title">مشكلة GPU و cuDNN</span>
+                    <span class="problem-title lang-ar">مشكلة GPU و cuDNN</span>
+                    <span class="problem-title lang-en">GPU & cuDNN Issue</span>
                 </div>
-                <p class="problem-description">
+                <p class="problem-description lang-ar">
                     التدريب كان بيقع بخطأ <code>UNKNOWN: &lt;unknown cudnn status: 5003&gt;</code>.
                     المشكلة كانت عدم توافق بين TensorFlow 2.20.0 و cuDNN drivers مع كارت NVIDIA GeForce GTX 1070.
                 </p>
+                <p class="problem-description lang-en">
+                    Training crashed with error <code>UNKNOWN: &lt;unknown cudnn status: 5003&gt;</code>.
+                    The issue was incompatibility between TensorFlow 2.20.0 and cuDNN drivers with NVIDIA GeForce GTX
+                    1070.
+                </p>
                 <div class="solution-box">
-                    <div class="solution-label">✅ الحل</div>
-                    <p>حولنا التدريب لـ CPU فقط باستخدام <code>CUDA_VISIBLE_DEVICES=""</code>. التدريب اشتغل تمام بس
-                        أبطأ شوية (2-3 ساعات بدل دقائق).</p>
+                    <div class="solution-label lang-ar">✅ الحل</div>
+                    <div class="solution-label lang-en">✅ Solution</div>
+                    <p class="lang-ar">حولنا التدريب لـ CPU فقط باستخدام <code>CUDA_VISIBLE_DEVICES=""</code>. التدريب
+                        اشتغل تمام بس أبطأ شوية (2-3 ساعات بدل دقائق).</p>
+                    <p class="lang-en">Switched to CPU-only training using <code>CUDA_VISIBLE_DEVICES=""</code>.
+                        Training worked fine but slower (2-3 hours instead of minutes).</p>
                 </div>
             </div>
 
+            <!-- Problem 2 -->
             <div class="problem-item">
                 <div class="problem-header">
                     <span class="problem-number">2</span>
-                    <span class="problem-title">صور تالفة في Dataset</span>
+                    <span class="problem-title lang-ar">صور تالفة في Dataset</span>
+                    <span class="problem-title lang-en">Corrupted Images in Dataset</span>
                 </div>
-                <p class="problem-description">
+                <p class="problem-description lang-ar">
                     لقينا صور corrupted في الـ dataset كانت بتوقف التدريب وبتعمل errors.
                     الصور دي كانت بتسبب مشاكل في الـ data pipeline.
                 </p>
+                <p class="problem-description lang-en">
+                    Found corrupted images in the dataset that were stopping training and causing errors.
+                    These images were causing issues in the data pipeline.
+                </p>
                 <div class="solution-box">
-                    <div class="solution-label">✅ الحل</div>
-                    <p>عملنا سكريبت <code>fix_corrupted_images.py</code> يكتشف الصور التالفة ويحركها لفولدر backup. كده
-                        الـ training اشتغل من غير مشاكل.</p>
+                    <div class="solution-label lang-ar">✅ الحل</div>
+                    <div class="solution-label lang-en">✅ Solution</div>
+                    <p class="lang-ar">عملنا سكريبت <code>fix_corrupted_images.py</code> يكتشف الصور التالفة ويحركها
+                        لفولدر backup. كده الـ training اشتغل من غير مشاكل.</p>
+                    <p class="lang-en">Created <code>fix_corrupted_images.py</code> script to detect corrupted images
+                        and move them to a backup folder. Training then worked without issues.</p>
                 </div>
             </div>
 
+            <!-- Problem 3 -->
             <div class="problem-item">
                 <div class="problem-header">
                     <span class="problem-number">3</span>
-                    <span class="problem-title">Sensitivity منخفضة</span>
+                    <span class="problem-title lang-ar">Sensitivity منخفضة</span>
+                    <span class="problem-title lang-en">Low Sensitivity</span>
                 </div>
-                <p class="problem-description">
+                <p class="problem-description lang-ar">
                     الموديل كان بيفوّت حالات مرضية كتير (False Negatives).
                     في البداية الـ Sensitivity كانت 66% بس - يعني 33% من المرضى ممكن يتفوتوا!
                 </p>
+                <p class="problem-description lang-en">
+                    Model was missing many sick cases (False Negatives).
+                    Initially Sensitivity was only 66% - meaning 33% of patients could be missed!
+                </p>
                 <div class="solution-box">
-                    <div class="solution-label">✅ الحل</div>
-                    <p>خفضنا الـ Threshold من 0.5 لـ 0.4، واستخدمنا Ensemble من عدة موديلات، وزودنا الـ augmentation.
-                        وصلنا لـ 88.7% sensitivity.</p>
+                    <div class="solution-label lang-ar">✅ الحل</div>
+                    <div class="solution-label lang-en">✅ Solution</div>
+                    <p class="lang-ar">خفضنا الـ Threshold من 0.5 لـ 0.4، واستخدمنا Ensemble من عدة موديلات، وزودنا الـ
+                        augmentation. وصلنا لـ 88.7% sensitivity.</p>
+                    <p class="lang-en">Reduced Threshold from 0.5 to 0.4, used Ensemble of multiple models, and
+                        increased augmentation. Reached 88.7% sensitivity.</p>
                 </div>
             </div>
 
+            <!-- Problem 4 -->
             <div class="problem-item">
                 <div class="problem-header">
                     <span class="problem-number">4</span>
-                    <span class="problem-title">مشاكل Docker و Railway</span>
+                    <span class="problem-title lang-ar">مشاكل Docker و Railway</span>
+                    <span class="problem-title lang-en">Docker & Railway Issues</span>
                 </div>
-                <p class="problem-description">
+                <p class="problem-description lang-ar">
                     واجهنا أخطاء في بناء Docker image على Railway:
                     <br>- ملف <code>requirements_api.txt</code> مش موجود
                     <br>- أسماء packages قديمة ومش متوافقة
                     <br>- FastAPI module not found
                 </p>
+                <p class="problem-description lang-en">
+                    Encountered errors building Docker image on Railway:
+                    <br>- File <code>requirements_api.txt</code> not found
+                    <br>- Outdated and incompatible package names
+                    <br>- FastAPI module not found
+                </p>
                 <div class="solution-box">
-                    <div class="solution-label">✅ الحل</div>
-                    <p>صلحنا الـ Dockerfile وأضفنا الملفات الناقصة وحدّثنا أسماء الـ packages. كده الـ build اشتغل صح
-                        على Railway.</p>
+                    <div class="solution-label lang-ar">✅ الحل</div>
+                    <div class="solution-label lang-en">✅ Solution</div>
+                    <p class="lang-ar">صلحنا الـ Dockerfile وأضفنا الملفات الناقصة وحدّثنا أسماء الـ packages. كده الـ
+                        build اشتغل صح على Railway.</p>
+                    <p class="lang-en">Fixed the Dockerfile, added missing files, and updated package names. The build
+                        then worked correctly on Railway.</p>
                 </div>
             </div>
 
+            <!-- Problem 5 -->
             <div class="problem-item">
                 <div class="problem-header">
                     <span class="problem-number">5</span>
                     <span class="problem-title">TensorFlow Module Errors</span>
                 </div>
-                <p class="problem-description">
+                <p class="problem-description lang-ar">
                     ظهرت أخطاء <code>ModuleNotFoundError: No module named 'tensorflow.python'</code>
                     بسبب مشاكل في الـ installation.
                 </p>
+                <p class="problem-description lang-en">
+                    Got errors <code>ModuleNotFoundError: No module named 'tensorflow.python'</code>
+                    due to installation issues.
+                </p>
                 <div class="solution-box">
-                    <div class="solution-label">✅ الحل</div>
-                    <p>عملنا reinstall لـ TensorFlow مع الإصدار الصح (<code>tensorflow-cpu</code> للـ deployment)
-                        وأصلحنا الـ imports.</p>
+                    <div class="solution-label lang-ar">✅ الحل</div>
+                    <div class="solution-label lang-en">✅ Solution</div>
+                    <p class="lang-ar">عملنا reinstall لـ TensorFlow مع الإصدار الصح (<code>tensorflow-cpu</code> للـ
+                        deployment) وأصلحنا الـ imports.</p>
+                    <p class="lang-en">Reinstalled TensorFlow with the correct version (<code>tensorflow-cpu</code> for
+                        deployment) and fixed imports.</p>
                 </div>
             </div>
 
+            <!-- Problem 6 -->
             <div class="problem-item">
                 <div class="problem-header">
                     <span class="problem-number">6</span>
-                    <span class="problem-title">حجم الصور مش متطابق</span>
+                    <span class="problem-title lang-ar">حجم الصور مش متطابق</span>
+                    <span class="problem-title lang-en">Image Size Mismatch</span>
                 </div>
-                <p class="problem-description">
+                <p class="problem-description lang-ar">
                     الصور جاية بأحجام مختلفة والموديل محتاج حجم ثابت 224×224.
                     ده كان بيسبب errors في الـ evaluation.
                 </p>
+                <p class="problem-description lang-en">
+                    Images came in different sizes while the model needed a fixed 224×224 size.
+                    This was causing errors in evaluation.
+                </p>
                 <div class="solution-box">
-                    <div class="solution-label">✅ الحل</div>
-                    <p>أضفنا preprocessing layer في الموديل يعمل resize تلقائي لكل الصور، ووحّدنا الـ config في كل
-                        الملفات.</p>
+                    <div class="solution-label lang-ar">✅ الحل</div>
+                    <div class="solution-label lang-en">✅ Solution</div>
+                    <p class="lang-ar">أضفنا preprocessing layer في الموديل يعمل resize تلقائي لكل الصور، ووحّدنا الـ
+                        config في كل الملفات.</p>
+                    <p class="lang-en">Added a preprocessing layer in the model for automatic resize of all images, and
+                        unified the config across all files.</p>
                 </div>
             </div>
 
+            <!-- Problem 7 -->
             <div class="problem-item" style="border-right-color: #f59e0b;">
                 <div class="problem-header">
                     <span class="problem-number" style="background: #f59e0b;">7</span>
-                    <span class="problem-title">🆕 الموديل بيقبل أي صورة!</span>
+                    <span class="problem-title lang-ar">🆕 الموديل بيقبل أي صورة!</span>
+                    <span class="problem-title lang-en">🆕 Model Accepts Any Image!</span>
                 </div>
-                <p class="problem-description">
+                <p class="problem-description lang-ar">
                     اكتشفنا إن الموديل كان بيقبل <strong>أي صورة</strong> (حتى صور الأشخاص أو المناظر الطبيعية)
                     وبيدي نتيجة تشخيص! ده خطير جداً لأن الموديل مفروض يستقبل صور أشعة الصدر فقط.
                     <br><br>
@@ -684,9 +742,20 @@
                     <br>• صور الفريق (Team Photos)
                     <br>• شرائح العروض التقديمية (Business Slides)
                 </p>
+                <p class="problem-description lang-en">
+                    Discovered that the model was accepting <strong>any image</strong> (even selfies or landscapes)
+                    and giving diagnosis results! Very dangerous since the model should only accept chest X-rays.
+                    <br><br>
+                    <strong>Examples of incorrectly accepted images:</strong>
+                    <br>• Desktop screenshots
+                    <br>• Motherboard and computer parts photos
+                    <br>• Team photos
+                    <br>• Business presentation slides
+                </p>
                 <div class="solution-box">
-                    <div class="solution-label">✅ الحل: تدريب Classifier مخصص للتعرف على صور الأشعة</div>
-                    <p>
+                    <div class="solution-label lang-ar">✅ الحل: تدريب Classifier مخصص للتعرف على صور الأشعة</div>
+                    <div class="solution-label lang-en">✅ Solution: Train a Custom X-ray Classifier</div>
+                    <p class="lang-ar">
                         <strong>المحاولة الأولى (فشلت):</strong> استخدام Grayscale Threshold
                         <br>• جربنا رفض الصور اللي الـ grayscale score بتاعها أقل من 0.93
                         <br>• المشكلة: صور كتير (screenshots، slides) عندها grayscale score عالي برضو!
@@ -704,6 +773,25 @@
                         <br>• ❌ Team Photo: score = 0.001 (مرفوض)
                         <br><br>
                         الملف: <code>xray_validator.py</code> + <code>results/models/xray_detector.keras</code>
+                    </p>
+                    <p class="lang-en">
+                        <strong>First Attempt (Failed):</strong> Using Grayscale Threshold
+                        <br>• Tried rejecting images with grayscale score below 0.93
+                        <br>• Problem: Many images (screenshots, slides) also have high grayscale scores!
+                        <br><br>
+                        <strong>Final Solution: Train Binary Classifier</strong>
+                        <br>• Trained a custom MobileNetV2 model to distinguish X-rays from non-X-rays
+                        <br>• Used ~700 X-ray images + ~300 non-X-ray images for training
+                        <br>• Model gives score from 0 to 1 (above 0.5 = X-ray)
+                        <br><br>
+                        <strong>Results:</strong>
+                        <br>• ✅ Dataset X-ray: score = 1.000 (accepted)
+                        <br>• ✅ User X-ray: score = 0.998 (accepted)
+                        <br>• ❌ Motherboard: score = 0.004 (rejected)
+                        <br>• ❌ Screenshot: score = 0.003 (rejected)
+                        <br>• ❌ Team Photo: score = 0.001 (rejected)
+                        <br><br>
+                        Files: <code>xray_validator.py</code> + <code>results/models/xray_detector.keras</code>
                     </p>
                 </div>
             </div>
@@ -743,7 +831,8 @@
 
         <!-- Architecture -->
         <section class="section">
-            <h2 class="section-title">🏗️ بنية المشروع</h2>
+            <h2 class="section-title lang-ar">🏗️ بنية المشروع</h2>
+            <h2 class="section-title lang-en">🏗️ Project Architecture</h2>
             <div class="architecture-diagram">
                 <div class="flow-container">
                     <div class="flow-item">
@@ -776,16 +865,21 @@
                         <div>التشخيص</div>
                     </div>
                 </div>
-                <p style="margin-top: 20px; color: var(--text-secondary); font-size: 0.9rem;">
+                <p class="lang-ar" style="margin-top: 20px; color: var(--text-secondary); font-size: 0.9rem;">
                     🆕 <strong>جديد:</strong> خطوة X-ray Validation بتتأكد إن الصورة المرفوعة هي أشعة صدر فعلاً قبل
                     التشخيص
+                </p>
+                <p class="lang-en" style="margin-top: 20px; color: var(--text-secondary); font-size: 0.9rem;">
+                    🆕 <strong>New:</strong> X-ray Validation step ensures the uploaded image is actually a chest X-ray
+                    before diagnosis
                 </p>
             </div>
         </section>
 
         <!-- Timeline -->
         <section class="section">
-            <h2 class="section-title">📅 مراحل المشروع</h2>
+            <h2 class="section-title lang-ar">📅 مراحل المشروع</h2>
+            <h2 class="section-title lang-en">📅 Project Phases</h2>
             <div class="timeline">
                 <div class="timeline-item">
                     <div class="timeline-title">1️⃣ إعداد البيئة والبيانات</div>
@@ -849,7 +943,8 @@
 
         <!-- AI Team Section -->
         <section class="section">
-            <h2 class="section-title">🧠 فريق الذكاء الاصطناعي</h2>
+            <h2 class="section-title lang-ar">🧠 فريق الذكاء الاصطناعي</h2>
+            <h2 class="section-title lang-en">🧠 AI Team</h2>
             <div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
                 <div class="card" style="text-align: center;">
                     <img src="team_ai_head.png?v=3" alt="Eng. Abdelwahab Radi"
@@ -875,10 +970,11 @@
 
         <!-- Conclusion -->
         <section class="section">
-            <h2 class="section-title">🎯 الخلاصة</h2>
+            <h2 class="section-title lang-ar">🎯 الخلاصة</h2>
+            <h2 class="section-title lang-en">🎯 Conclusion</h2>
             <div class="card"
                 style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(14, 165, 233, 0.1) 100%);">
-                <p style="font-size: 1.1rem; line-height: 2;">
+                <p class="lang-ar" style="font-size: 1.1rem; line-height: 2;">
                     المشروع ده مثال عملي على استخدام الذكاء الاصطناعي في المجال الطبي.
                     واجهنا تحديات كتير من مشاكل الـ GPU لحد مشاكل الـ deployment،
                     بس في النهاية وصلنا لنموذج بدقة <strong>89.3%</strong> وROC-AUC <strong>95.2%</strong>.
@@ -887,6 +983,18 @@
                     مع التأكيد إنه مش بديل عن الخبرة الطبية.
                     <br><br>
                     ⚠️ <strong>تنويه:</strong> المشروع ده للأغراض التعليمية ومش للاستخدام الطبي الفعلي بدون إشراف طبي.
+                </p>
+                <p class="lang-en" style="font-size: 1.1rem; line-height: 2;">
+                    This project is a practical example of using AI in the medical field.
+                    We faced many challenges from GPU issues to deployment problems,
+                    but ultimately achieved a model with <strong>89.3%</strong> accuracy and <strong>95.2%</strong>
+                    ROC-AUC.
+                    <br><br>
+                    The model can be used as a supporting tool for doctors in rapid diagnosis,
+                    while emphasizing that it is not a replacement for medical expertise.
+                    <br><br>
+                    ⚠️ <strong>Disclaimer:</strong> This project is for educational purposes and not for actual medical
+                    use without medical supervision.
                 </p>
             </div>
         </section>
