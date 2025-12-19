@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html dir="rtl" lang="ar">
+<html dir="rtl" lang="ar" id="htmlRoot">
 
 <head>
     <meta charset="UTF-8">
@@ -376,15 +376,110 @@
         .stat-card {
             animation: fadeInUp 0.6s ease-out forwards;
         }
+
+        /* Language Toggle */
+        .lang-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 5px;
+            background: rgba(30, 41, 59, 0.95);
+            padding: 8px;
+            border-radius: 30px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .lang-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .lang-btn.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+        }
+
+        .lang-btn:not(.active) {
+            background: transparent;
+            color: var(--text-secondary);
+        }
+
+        .lang-btn:hover:not(.active) {
+            color: var(--text-primary);
+        }
+
+        /* RTL/LTR specific */
+        html[dir="ltr"] .section-title::after {
+            background: linear-gradient(to right, transparent, var(--border));
+        }
+
+        html[dir="ltr"] .problem-item {
+            border-right: none;
+            border-left: 4px solid var(--danger);
+        }
+
+        html[dir="ltr"] .solution-box {
+            border-right: none;
+            border-left: 3px solid var(--success);
+        }
+
+        html[dir="ltr"] .timeline {
+            padding-right: 0;
+            padding-left: 40px;
+        }
+
+        html[dir="ltr"] .timeline::before {
+            right: auto;
+            left: 10px;
+        }
+
+        html[dir="ltr"] .timeline-item::before {
+            right: auto;
+            left: -36px;
+        }
+
+        /* Hide/show based on language */
+        .lang-ar {
+            display: block;
+        }
+
+        .lang-en {
+            display: none;
+        }
+
+        html[lang="en"] .lang-ar {
+            display: none;
+        }
+
+        html[lang="en"] .lang-en {
+            display: block;
+        }
     </style>
 </head>
 
 <body>
+    <!-- Language Toggle -->
+    <div class="lang-toggle">
+        <button class="lang-btn active" id="btnAr" onclick="setLang('ar')">العربية</button>
+        <button class="lang-btn" id="btnEn" onclick="setLang('en')">English</button>
+    </div>
+
     <!-- Header -->
     <header class="header">
         <span class="emoji">🫁</span>
-        <h1>مشروع كشف الالتهاب الرئوي بالذكاء الاصطناعي</h1>
-        <p>نظام ذكي لتحليل صور الأشعة السينية واكتشاف الالتهاب الرئوي باستخدام التعلم العميق</p>
+        <h1 class="lang-ar">مشروع كشف الالتهاب الرئوي بالذكاء الاصطناعي</h1>
+        <h1 class="lang-en">AI-Powered Pneumonia Detection Project</h1>
+        <p class="lang-ar">نظام ذكي لتحليل صور الأشعة السينية واكتشاف الالتهاب الرئوي باستخدام التعلم العميق</p>
+        <p class="lang-en">An intelligent system for analyzing chest X-ray images and detecting pneumonia using deep
+            learning</p>
     </header>
 
     <div class="container">
@@ -394,49 +489,65 @@
                       color: white; padding: 20px 50px; border-radius: 50px; font-size: 1.4rem; 
                       font-weight: 700; text-decoration: none; box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
                       transition: all 0.3s; border: none;">
-                🚀 جرب التطبيق مباشرة
+                <span class="lang-ar">🚀 جرب التطبيق مباشرة</span>
+                <span class="lang-en">🚀 Try the Live Demo</span>
             </a>
-            <p style="margin-top: 15px; color: #94a3b8;">اضغط هنا لتجربة نظام كشف الالتهاب الرئوي</p>
+            <p class="lang-ar" style="margin-top: 15px; color: #94a3b8;">اضغط هنا لتجربة نظام كشف الالتهاب الرئوي</p>
+            <p class="lang-en" style="margin-top: 15px; color: #94a3b8;">Click here to try the pneumonia detection
+                system</p>
         </section>
 
         <!-- Project Overview -->
         <section class="section">
-            <h2 class="section-title">📋 نظرة عامة على المشروع</h2>
+            <h2 class="section-title lang-ar">📋 نظرة عامة على المشروع</h2>
+            <h2 class="section-title lang-en">📋 Project Overview</h2>
             <div class="cards-grid">
                 <div class="card">
                     <div class="card-icon">🎯</div>
-                    <h3>الهدف</h3>
-                    <p>بناء نموذج ذكاء اصطناعي يقدر يكتشف الالتهاب الرئوي من صور الأشعة السينية للصدر بدقة عالية تساعد
-                        الأطباء في التشخيص السريع.</p>
+                    <h3 class="lang-ar">الهدف</h3>
+                    <h3 class="lang-en">Goal</h3>
+                    <p class="lang-ar">بناء نموذج ذكاء اصطناعي يقدر يكتشف الالتهاب الرئوي من صور الأشعة السينية للصدر
+                        بدقة عالية تساعد الأطباء في التشخيص السريع.</p>
+                    <p class="lang-en">Build an AI model that can detect pneumonia from chest X-ray images with high
+                        accuracy to assist doctors in rapid diagnosis.</p>
                 </div>
                 <div class="card">
                     <div class="card-icon">🧠</div>
-                    <h3>التقنية المستخدمة</h3>
-                    <p>استخدمنا Transfer Learning مع EfficientNet (B0, B3, B4) عشان نستفيد من النماذج المدربة مسبقاً
-                        ونضيف طبقات مخصصة للمشكلة بتاعتنا.</p>
+                    <h3 class="lang-ar">التقنية المستخدمة</h3>
+                    <h3 class="lang-en">Technology Used</h3>
+                    <p class="lang-ar">استخدمنا Transfer Learning مع EfficientNet (B0, B3, B4) عشان نستفيد من النماذج
+                        المدربة مسبقاً ونضيف طبقات مخصصة للمشكلة بتاعتنا.</p>
+                    <p class="lang-en">We used Transfer Learning with EfficientNet (B0, B3, B4) to leverage pre-trained
+                        models and add custom layers for our specific problem.</p>
                 </div>
                 <div class="card">
                     <div class="card-icon">🔄</div>
                     <h3>Ensemble Learning</h3>
-                    <p>جمعنا أكتر من موديل مع بعض (Ensemble) عشان نحصل على أفضل دقة ممكنة - كل موديل بيساهم في القرار
-                        النهائي.</p>
+                    <p class="lang-ar">جمعنا أكتر من موديل مع بعض (Ensemble) عشان نحصل على أفضل دقة ممكنة - كل موديل
+                        بيساهم في القرار النهائي.</p>
+                    <p class="lang-en">We combined multiple models together (Ensemble) to achieve the best possible
+                        accuracy - each model contributes to the final decision.</p>
                 </div>
                 <div class="card">
                     <div class="card-icon">🌐</div>
-                    <h3>الـ Deployment</h3>
-                    <p>جهزنا API بـ FastAPI وواجهة مستخدم بـ Streamlit، مع دعم Docker للنشر على Railway, Render, Azure
-                        وغيرهم.</p>
+                    <h3>Deployment</h3>
+                    <p class="lang-ar">جهزنا API بـ FastAPI وواجهة مستخدم بـ Streamlit، مع دعم Docker للنشر على Railway,
+                        Render, Azure وغيرهم.</p>
+                    <p class="lang-en">We built an API with FastAPI and a user interface with Streamlit, with Docker
+                        support for deployment on Railway, Render, Azure and more.</p>
                 </div>
             </div>
         </section>
 
         <!-- Stats -->
         <section class="section">
-            <h2 class="section-title">📊 نتائج الموديل</h2>
+            <h2 class="section-title lang-ar">📊 نتائج الموديل</h2>
+            <h2 class="section-title lang-en">📊 Model Results</h2>
             <div class="stats-container">
                 <div class="stat-card">
                     <div class="stat-value">89.3%</div>
-                    <div class="stat-label">الدقة الإجمالية (Accuracy)</div>
+                    <div class="stat-label lang-ar">الدقة الإجمالية (Accuracy)</div>
+                    <div class="stat-label lang-en">Overall Accuracy</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value">95.2%</div>
@@ -444,18 +555,21 @@
                 </div>
                 <div class="stat-card">
                     <div class="stat-value">88.7%</div>
-                    <div class="stat-label">الحساسية (Sensitivity)</div>
+                    <div class="stat-label lang-ar">الحساسية (Sensitivity)</div>
+                    <div class="stat-label lang-en">Sensitivity</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value">90.2%</div>
-                    <div class="stat-label">النوعية (Specificity)</div>
+                    <div class="stat-label lang-ar">النوعية (Specificity)</div>
+                    <div class="stat-label lang-en">Specificity</div>
                 </div>
             </div>
         </section>
 
         <!-- Problems Section -->
         <section class="section">
-            <h2 class="section-title">⚠️ أهم المشكلات اللي واجهتنا والحلول</h2>
+            <h2 class="section-title lang-ar">⚠️ أهم المشكلات اللي واجهتنا والحلول</h2>
+            <h2 class="section-title lang-en">⚠️ Key Challenges We Faced & Solutions</h2>
 
             <div class="problem-item">
                 <div class="problem-header">
@@ -597,7 +711,8 @@
 
         <!-- Tech Stack -->
         <section class="section">
-            <h2 class="section-title">🛠️ التقنيات المستخدمة</h2>
+            <h2 class="section-title lang-ar">🛠️ التقنيات المستخدمة</h2>
+            <h2 class="section-title lang-en">🛠️ Technologies Used</h2>
             <div class="tech-grid">
                 <div class="tech-item">
                     <span>🐍</span>
@@ -779,9 +894,44 @@
 
     <!-- Footer -->
     <footer class="footer">
-        <p>🫁 مشروع كشف الالتهاب الرئوي - تم إنشاؤه في ديسمبر 2025</p>
+        <p class="lang-ar">🫁 مشروع كشف الالتهاب الرئوي - تم إنشاؤه في ديسمبر 2024</p>
+        <p class="lang-en">🫁 Pneumonia Detection Project - Created December 2024</p>
         <p style="margin-top: 10px;">Built with ❤️ using Python, TensorFlow & FastAPI</p>
     </footer>
+
+    <!-- Language Toggle Script -->
+    <script>
+        function setLang(lang) {
+            const html = document.getElementById('htmlRoot');
+            const btnAr = document.getElementById('btnAr');
+            const btnEn = document.getElementById('btnEn');
+
+            if (lang === 'en') {
+                html.setAttribute('lang', 'en');
+                html.setAttribute('dir', 'ltr');
+                btnEn.classList.add('active');
+                btnAr.classList.remove('active');
+                document.title = 'Pneumonia Detection Project Documentation';
+            } else {
+                html.setAttribute('lang', 'ar');
+                html.setAttribute('dir', 'rtl');
+                btnAr.classList.add('active');
+                btnEn.classList.remove('active');
+                document.title = 'شرح مشروع كشف الالتهاب الرئوي';
+            }
+
+            // Save preference
+            localStorage.setItem('preferredLang', lang);
+        }
+
+        // Load saved preference on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            const savedLang = localStorage.getItem('preferredLang');
+            if (savedLang) {
+                setLang(savedLang);
+            }
+        });
+    </script>
 </body>
 
 </html>
