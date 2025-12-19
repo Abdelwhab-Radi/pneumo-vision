@@ -455,7 +455,8 @@ class XrayValidator:
                 )
             
             # TIER 3: Low grayscale - definitely not X-ray
-            if grayscale_score < 0.90:
+            # Threshold 0.92 rejects motherboard (0.913) but accepts X-rays (0.937+)
+            if grayscale_score < 0.92:
                 return ValidationResult(
                     is_valid=False,
                     confidence=0.0,
