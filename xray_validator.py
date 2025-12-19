@@ -403,12 +403,31 @@ class XrayValidator:
         """
         Perform full validation on an image.
         
+        HYBRID APPROACH:
+        1. Pure grayscale (>=0.99) = Accept (dataset X-rays)
+        2. Medium grayscale (0.90-0.99) = Check with MobileNet for SAFE keywords only
+        3. Low grayscale (<0.90) = Reject (definitely not X-ray)
+        
         Args:
             image_bytes: Raw image bytes
             
         Returns:
             ValidationResult with detailed results
         """
+        # SAFE keywords that NEVER match X-rays - only clear categories
+        # IMPORTANT: Do NOT add machine/printer/file etc - X-rays get misclassified as these!
+        SAFE_REJECT_KEYWORDS = [
+            # People (most reliable - never matches X-rays)
+            'suit', 'tie', 'windsor', 'groom', 'bride',
+            'person', 'man', 'woman', 'boy', 'girl', 'face',
+            # Animals
+            'dog', 'cat', 'bird', 'lion', 'tiger', 'elephant',
+            # Vehicles
+            'car', 'truck', 'airplane', 'bus',
+            # Clear consumer objects
+            'phone', 'camera', 'guitar', 'piano', 'television',
+        ]
+        
         try:
             # Load image
             image = Image.open(io.BytesIO(image_bytes))
@@ -417,71 +436,58 @@ class XrayValidator:
             if image.mode != 'RGB':
                 image = image.convert('RGB')
             
-            # Layer 1: Analyze image characteristics
+            # Analyze image characteristics
             characteristics = self._analyze_image_characteristics(image)
-            char_valid, char_confidence, char_msg_en, char_msg_ar = self._validate_characteristics(characteristics)
+            grayscale_score = characteristics.get("grayscale_score", 0)
             
-            # Layer 2: Pre-trained model validation
-            model_valid, model_confidence, model_msg_en, model_msg_ar, model_predictions = \
-                self._validate_with_pretrained_model(image)
-            
-            # Combine results
             validation_details = {
-                "characteristics": characteristics,
-                "characteristics_valid": char_valid,
-                "model_valid": model_valid,
-                "model_predictions": model_predictions
+                "characteristics": characteristics
             }
             
-            # Determine final result - SMART LOGIC
-            # If characteristics check failed (not valid), reject the image
-            if not char_valid:
-                # Reject based on characteristics - colorful images, screenshots, etc.
+            # TIER 1: Pure grayscale - definitely X-ray
+            if grayscale_score >= 0.99:
                 return ValidationResult(
-                    is_valid=False,
-                    confidence=char_confidence,
-                    message_en=char_msg_en,
-                    message_ar=char_msg_ar,
+                    is_valid=True,
+                    confidence=1.0,
+                    message_en="Image validated as chest X-ray",
+                    message_ar="تم التحقق من الصورة كأشعة صدر",
                     validation_details=validation_details
                 )
             
-            # SMART HANDLING: For truly grayscale images with X-ray characteristics,
-            # trust characteristics over MobileNet (which often misclassifies X-rays)
-            grayscale_score = characteristics.get("grayscale_score", 0)
-            dark_ratio = characteristics.get("dark_pixel_ratio", 0)
-            
-            # If image is mostly grayscale (>0.90) with SIGNIFICANT dark regions (X-ray hallmark),
-            # trust characteristics and accept even if MobileNet rejects
-            # Note: dark_ratio >= 0.4 because real X-rays have dark lungs (~0.6 ratio)
-            # This helps reject tech images like motherboards (~0.32 dark ratio)
-            is_true_grayscale_xray = (
-                grayscale_score >= 0.90 and 
-                dark_ratio >= 0.4 and  # Raised from 0.1 to reject tech images
-                char_valid and
-                char_confidence >= 0.8
-            )
-            
-            if not model_valid and not is_true_grayscale_xray:
-                # Pre-trained model identified non-X-ray content AND it's not a true grayscale X-ray
+            # TIER 3: Low grayscale - definitely not X-ray
+            if grayscale_score < 0.90:
                 return ValidationResult(
                     is_valid=False,
-                    confidence=model_confidence,
-                    message_en=model_msg_en,
-                    message_ar=model_msg_ar,
+                    confidence=0.0,
+                    message_en=f"This image appears to be a color photograph. Please upload a chest X-ray image.",
+                    message_ar=f"هذه الصورة تبدو صورة ملونة. من فضلك ارفع صورة أشعة صدر.",
                     validation_details=validation_details
                 )
             
-            # Image passed validation
-            if is_true_grayscale_xray and not model_valid:
-                # Accepted based on strong grayscale characteristics
-                combined_confidence = char_confidence * 0.9  # Slightly lower confidence
-                validation_details["override_reason"] = "Accepted based on strong grayscale X-ray characteristics"
-            else:
-                combined_confidence = (char_confidence + model_confidence) / 2
+            # TIER 2: Medium grayscale (0.90-0.99) - check with MobileNet
+            if self.use_pretrained_model and self.mobilenet_model is not None:
+                model_valid, _, model_msg_en, model_msg_ar, model_predictions = \
+                    self._validate_with_pretrained_model(image)
+                
+                validation_details["model_predictions"] = model_predictions
+                
+                # Check only SAFE keywords
+                for class_name, prob in model_predictions.items():
+                    if prob > 0.10:  # Only high confidence matches
+                        for keyword in SAFE_REJECT_KEYWORDS:
+                            if keyword in class_name.lower():
+                                return ValidationResult(
+                                    is_valid=False,
+                                    confidence=0.0,
+                                    message_en=f"This appears to be a '{class_name}' image. Please upload a chest X-ray.",
+                                    message_ar=f"هذه الصورة تبدو '{class_name}'. من فضلك ارفع صورة أشعة صدر.",
+                                    validation_details=validation_details
+                                )
             
+            # Passed all checks - accept as X-ray
             return ValidationResult(
                 is_valid=True,
-                confidence=combined_confidence,
+                confidence=grayscale_score,
                 message_en="Image validated as potential chest X-ray",
                 message_ar="تم التحقق من الصورة كأشعة صدر محتملة",
                 validation_details=validation_details
