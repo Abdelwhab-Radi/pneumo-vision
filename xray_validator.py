@@ -450,11 +450,13 @@ class XrayValidator:
             grayscale_score = characteristics.get("grayscale_score", 0)
             dark_ratio = characteristics.get("dark_pixel_ratio", 0)
             
-            # If image is truly grayscale (>0.95) with significant dark regions (X-ray hallmark),
+            # If image is mostly grayscale (>0.90) with SIGNIFICANT dark regions (X-ray hallmark),
             # trust characteristics and accept even if MobileNet rejects
+            # Note: dark_ratio >= 0.4 because real X-rays have dark lungs (~0.6 ratio)
+            # This helps reject tech images like motherboards (~0.32 dark ratio)
             is_true_grayscale_xray = (
-                grayscale_score >= 0.95 and 
-                dark_ratio >= 0.1 and 
+                grayscale_score >= 0.90 and 
+                dark_ratio >= 0.4 and  # Raised from 0.1 to reject tech images
                 char_valid and
                 char_confidence >= 0.8
             )
