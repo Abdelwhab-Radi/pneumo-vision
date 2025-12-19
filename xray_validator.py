@@ -455,8 +455,8 @@ class XrayValidator:
                 )
             
             # TIER 3: Low grayscale - definitely not X-ray
-            # Threshold 0.93 rejects screenshots (0.926) but accepts X-rays (0.937+)
-            if grayscale_score < 0.93:
+            # Threshold 0.935 rejects borderline images (0.92-0.93) but accepts X-rays (0.936+)
+            if grayscale_score < 0.935:
                 return ValidationResult(
                     is_valid=False,
                     confidence=0.0,
