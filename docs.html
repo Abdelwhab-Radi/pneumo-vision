@@ -837,7 +837,8 @@
                 <div class="flow-container">
                     <div class="flow-item">
                         <div>📷</div>
-                        <div>رفع صورة</div>
+                        <div class="lang-ar">رفع صورة</div>
+                        <div class="lang-en">Upload Image</div>
                     </div>
                     <span class="flow-arrow">←</span>
                     <div class="flow-item" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
@@ -862,7 +863,8 @@
                     <span class="flow-arrow">←</span>
                     <div class="flow-item" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
                         <div>✅</div>
-                        <div>التشخيص</div>
+                        <div class="lang-ar">التشخيص</div>
+                        <div class="lang-en">Diagnosis</div>
                     </div>
                 </div>
                 <p class="lang-ar" style="margin-top: 20px; color: var(--text-secondary); font-size: 0.9rem;">
@@ -882,61 +884,86 @@
             <h2 class="section-title lang-en">📅 Project Phases</h2>
             <div class="timeline">
                 <div class="timeline-item">
-                    <div class="timeline-title">1️⃣ إعداد البيئة والبيانات</div>
-                    <p>تجهيز Python environment، تنزيل الـ dataset، ومعالجة الصور التالفة.</p>
+                    <div class="timeline-title lang-ar">1️⃣ إعداد البيئة والبيانات</div>
+                    <div class="timeline-title lang-en">1️⃣ Environment & Data Setup</div>
+                    <p class="lang-ar">تجهيز Python environment، تنزيل الـ dataset، ومعالجة الصور التالفة.</p>
+                    <p class="lang-en">Setting up Python environment, downloading dataset, and handling corrupted
+                        images.</p>
                 </div>
                 <div class="timeline-item">
-                    <div class="timeline-title">2️⃣ بناء وتدريب الموديل</div>
-                    <p>تجربة موديلات مختلفة (B0, B3, B4) مع تقنيات augmentation متنوعة.</p>
+                    <div class="timeline-title lang-ar">2️⃣ بناء وتدريب الموديل</div>
+                    <div class="timeline-title lang-en">2️⃣ Model Building & Training</div>
+                    <p class="lang-ar">تجربة موديلات مختلفة (B0, B3, B4) مع تقنيات augmentation متنوعة.</p>
+                    <p class="lang-en">Testing different models (B0, B3, B4) with various augmentation techniques.</p>
                 </div>
                 <div class="timeline-item">
-                    <div class="timeline-title">3️⃣ تحسين الأداء</div>
-                    <p>استخدام Ensemble learning وتحسين الـ threshold للوصول لأفضل نتائج.</p>
+                    <div class="timeline-title lang-ar">3️⃣ تحسين الأداء</div>
+                    <div class="timeline-title lang-en">3️⃣ Performance Optimization</div>
+                    <p class="lang-ar">استخدام Ensemble learning وتحسين الـ threshold للوصول لأفضل نتائج.</p>
+                    <p class="lang-en">Using Ensemble learning and optimizing threshold for best results.</p>
                 </div>
                 <div class="timeline-item">
-                    <div class="timeline-title">4️⃣ بناء الـ API والواجهة</div>
-                    <p>تطوير FastAPI backend وStreamlit frontend للاستخدام السهل.</p>
+                    <div class="timeline-title lang-ar">4️⃣ بناء الـ API والواجهة</div>
+                    <div class="timeline-title lang-en">4️⃣ API & Interface Development</div>
+                    <p class="lang-ar">تطوير FastAPI backend وStreamlit frontend للاستخدام السهل.</p>
+                    <p class="lang-en">Developing FastAPI backend and Streamlit frontend for easy use.</p>
                 </div>
                 <div class="timeline-item">
-                    <div class="timeline-title">5️⃣ الـ Deployment</div>
-                    <p>إعداد Docker وملفات التكوين للنشر على منصات سحابية مختلفة.</p>
+                    <div class="timeline-title lang-ar">5️⃣ الـ Deployment</div>
+                    <div class="timeline-title lang-en">5️⃣ Deployment</div>
+                    <p class="lang-ar">إعداد Docker وملفات التكوين للنشر على منصات سحابية مختلفة.</p>
+                    <p class="lang-en">Setting up Docker and configuration files for deployment on various cloud
+                        platforms.</p>
                 </div>
             </div>
         </section>
 
         <!-- Files Structure -->
         <section class="section">
-            <h2 class="section-title">📁 ملفات المشروع الرئيسية</h2>
+            <h2 class="section-title lang-ar">📁 ملفات المشروع الرئيسية</h2>
+            <h2 class="section-title lang-en">📁 Main Project Files</h2>
             <div class="cards-grid">
                 <div class="card">
                     <h3>🧠 model.py</h3>
-                    <p>الملف الرئيسي للتدريب - يحتوي على بناء الموديل، الـ training loop، والـ callbacks.</p>
+                    <p class="lang-ar">الملف الرئيسي للتدريب - يحتوي على بناء الموديل، الـ training loop، والـ
+                        callbacks.</p>
+                    <p class="lang-en">Main training file - contains model building, training loop, and callbacks.</p>
                 </div>
                 <div class="card">
                     <h3>⚡ api.py</h3>
-                    <p>FastAPI server للـ REST API - يستقبل الصور ويرجع التشخيص.</p>
+                    <p class="lang-ar">FastAPI server للـ REST API - يستقبل الصور ويرجع التشخيص.</p>
+                    <p class="lang-en">FastAPI server for REST API - receives images and returns diagnosis.</p>
                 </div>
                 <div class="card">
                     <h3>🎈 streamlit_app.py</h3>
-                    <p>واجهة المستخدم الرسومية - سهلة الاستخدام للأطباء.</p>
+                    <p class="lang-ar">واجهة المستخدم الرسومية - سهلة الاستخدام للأطباء.</p>
+                    <p class="lang-en">Graphical user interface - easy to use for doctors.</p>
                 </div>
                 <div class="card">
                     <h3>📊 evaluate_model.py</h3>
-                    <p>سكريبت تقييم الموديل وإنتاج التقارير والرسومات البيانية.</p>
+                    <p class="lang-ar">سكريبت تقييم الموديل وإنتاج التقارير والرسومات البيانية.</p>
+                    <p class="lang-en">Model evaluation script that produces reports and charts.</p>
                 </div>
                 <div class="card">
                     <h3>🔄 ensemble_predict.py</h3>
-                    <p>دمج عدة موديلات للحصول على تنبؤات أكثر دقة.</p>
+                    <p class="lang-ar">دمج عدة موديلات للحصول على تنبؤات أكثر دقة.</p>
+                    <p class="lang-en">Combines multiple models for more accurate predictions.</p>
                 </div>
                 <div class="card">
                     <h3>🐳 Dockerfile</h3>
-                    <p>ملف Docker للـ containerization والنشر السحابي.</p>
+                    <p class="lang-ar">ملف Docker للـ containerization والنشر السحابي.</p>
+                    <p class="lang-en">Docker file for containerization and cloud deployment.</p>
                 </div>
                 <div class="card" style="border: 2px solid #f59e0b;">
-                    <h3>🔍 xray_validator.py <span
-                            style="background: #f59e0b; color: black; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; margin-right: 5px;">جديد</span>
+                    <h3>🔍 xray_validator.py <span class="lang-ar"
+                            style="background: #f59e0b; color: black; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; margin-right: 5px;">جديد</span><span
+                            class="lang-en"
+                            style="background: #f59e0b; color: black; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; margin-right: 5px;">NEW</span>
                     </h3>
-                    <p>نظام التحقق من صور الأشعة - يتأكد إن الصورة المرفوعة هي أشعة صدر فعلاً قبل التشخيص.</p>
+                    <p class="lang-ar">نظام التحقق من صور الأشعة - يتأكد إن الصورة المرفوعة هي أشعة صدر فعلاً قبل
+                        التشخيص.</p>
+                    <p class="lang-en">X-ray image validation system - ensures uploaded image is actually a chest X-ray
+                        before diagnosis.</p>
                 </div>
             </div>
         </section>
