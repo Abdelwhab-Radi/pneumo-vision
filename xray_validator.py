@@ -16,6 +16,7 @@ Version: 1.0.0
 import numpy as np
 from PIL import Image
 import io
+import os
 import logging
 from typing import Tuple, Dict, Optional
 from dataclasses import dataclass
@@ -187,14 +188,32 @@ class XrayValidator:
         Initialize the validator.
         
         Args:
-            use_pretrained_model: Whether to use MobileNetV2 for additional validation
+            use_pretrained_model: Whether to use the trained X-ray detector model
         """
         self.use_pretrained_model = use_pretrained_model
         self.mobilenet_model = None
         self.decode_predictions = None
+        self.xray_detector_model = None  # New trained model
         
         if use_pretrained_model:
             self._load_pretrained_model()
+            self._load_xray_detector()  # Load trained detector
+    
+    def _load_xray_detector(self):
+        """Load the trained X-ray detector model"""
+        try:
+            tf, keras, _ = _load_tensorflow()
+            
+            model_path = 'results/models/xray_detector.keras'
+            if os.path.exists(model_path):
+                logger.info("Loading trained X-ray detector model...")
+                self.xray_detector_model = keras.models.load_model(model_path)
+                logger.info("✓ X-ray detector model loaded")
+            else:
+                logger.warning(f"X-ray detector model not found at {model_path}")
+                
+        except Exception as e:
+            logger.warning(f"Could not load X-ray detector: {e}")
     
     def _load_pretrained_model(self):
         """Load MobileNetV2 for image classification"""
@@ -401,12 +420,10 @@ class XrayValidator:
     
     def validate(self, image_bytes: bytes) -> ValidationResult:
         """
-        Perform full validation on an image.
+        Perform full validation on an image using trained X-ray detector.
         
-        HYBRID APPROACH:
-        1. Pure grayscale (>=0.99) = Accept (dataset X-rays)
-        2. Medium grayscale (0.90-0.99) = Check with MobileNet for SAFE keywords only
-        3. Low grayscale (<0.90) = Reject (definitely not X-ray)
+        Uses a dedicated binary classifier trained to distinguish X-rays from non-X-rays.
+        Falls back to grayscale threshold if model not available.
         
         Args:
             image_bytes: Raw image bytes
@@ -414,20 +431,6 @@ class XrayValidator:
         Returns:
             ValidationResult with detailed results
         """
-        # SAFE keywords that NEVER match X-rays - only clear categories
-        # IMPORTANT: Do NOT add machine/printer/file etc - X-rays get misclassified as these!
-        SAFE_REJECT_KEYWORDS = [
-            # People (most reliable - never matches X-rays)
-            'suit', 'tie', 'windsor', 'groom', 'bride',
-            'person', 'man', 'woman', 'boy', 'girl', 'face',
-            # Animals
-            'dog', 'cat', 'bird', 'lion', 'tiger', 'elephant',
-            # Vehicles
-            'car', 'truck', 'airplane', 'bus',
-            # Clear consumer objects
-            'phone', 'camera', 'guitar', 'piano', 'television',
-        ]
-        
         try:
             # Load image
             image = Image.open(io.BytesIO(image_bytes))
@@ -444,7 +447,46 @@ class XrayValidator:
                 "characteristics": characteristics
             }
             
-            # TIER 1: Pure grayscale - definitely X-ray
+            # PRIMARY: Use trained X-ray detector model
+            if self.xray_detector_model is not None:
+                try:
+                    # Preprocess image for model
+                    img_resized = image.resize((224, 224))
+                    img_array = np.array(img_resized, dtype=np.float32) / 255.0
+                    img_array = np.expand_dims(img_array, axis=0)
+                    
+                    # Predict (1 = X-ray, 0 = non-X-ray)
+                    prediction = self.xray_detector_model.predict(img_array, verbose=0)[0][0]
+                    is_xray = prediction > 0.5
+                    confidence = float(prediction) if is_xray else float(1 - prediction)
+                    
+                    validation_details["xray_detector_score"] = float(prediction)
+                    validation_details["detection_method"] = "trained_model"
+                    
+                    if is_xray:
+                        return ValidationResult(
+                            is_valid=True,
+                            confidence=confidence,
+                            message_en="Image validated as chest X-ray",
+                            message_ar="تم التحقق من الصورة كأشعة صدر",
+                            validation_details=validation_details
+                        )
+                    else:
+                        return ValidationResult(
+                            is_valid=False,
+                            confidence=0.0,
+                            message_en="This image does not appear to be a chest X-ray. Please upload only chest X-ray images.",
+                            message_ar="هذه الصورة لا تبدو أشعة صدر. من فضلك ارفع صور أشعة الصدر فقط.",
+                            validation_details=validation_details
+                        )
+                except Exception as e:
+                    logger.warning(f"X-ray detector prediction failed: {e}")
+                    # Fall through to backup validation
+            
+            # FALLBACK: Use grayscale threshold if model not available
+            validation_details["detection_method"] = "grayscale_threshold"
+            
+            # Pure grayscale images are likely X-rays
             if grayscale_score >= 0.99:
                 return ValidationResult(
                     is_valid=True,
@@ -454,38 +496,17 @@ class XrayValidator:
                     validation_details=validation_details
                 )
             
-            # TIER 3: Low grayscale - definitely not X-ray
-            # Threshold 0.935 rejects borderline images (0.92-0.93) but accepts X-rays (0.936+)
+            # Low grayscale = not X-ray
             if grayscale_score < 0.935:
                 return ValidationResult(
                     is_valid=False,
                     confidence=0.0,
-                    message_en=f"This image appears to be a color photograph. Please upload a chest X-ray image.",
-                    message_ar=f"هذه الصورة تبدو صورة ملونة. من فضلك ارفع صورة أشعة صدر.",
+                    message_en="This image appears to be a color photograph. Please upload a chest X-ray image.",
+                    message_ar="هذه الصورة تبدو صورة ملونة. من فضلك ارفع صورة أشعة صدر.",
                     validation_details=validation_details
                 )
             
-            # TIER 2: Medium grayscale (0.90-0.99) - check with MobileNet
-            if self.use_pretrained_model and self.mobilenet_model is not None:
-                model_valid, _, model_msg_en, model_msg_ar, model_predictions = \
-                    self._validate_with_pretrained_model(image)
-                
-                validation_details["model_predictions"] = model_predictions
-                
-                # Check only SAFE keywords
-                for class_name, prob in model_predictions.items():
-                    if prob > 0.10:  # Only high confidence matches
-                        for keyword in SAFE_REJECT_KEYWORDS:
-                            if keyword in class_name.lower():
-                                return ValidationResult(
-                                    is_valid=False,
-                                    confidence=0.0,
-                                    message_en=f"This appears to be a '{class_name}' image. Please upload a chest X-ray.",
-                                    message_ar=f"هذه الصورة تبدو '{class_name}'. من فضلك ارفع صورة أشعة صدر.",
-                                    validation_details=validation_details
-                                )
-            
-            # Passed all checks - accept as X-ray
+            # Medium grayscale - accept with lower confidence
             return ValidationResult(
                 is_valid=True,
                 confidence=grayscale_score,
