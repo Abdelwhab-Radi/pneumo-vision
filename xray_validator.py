@@ -161,7 +161,25 @@ class XrayValidator:
         # More specific ImageNet classes that appeared in tests
         'loafer', 'clog', 'sandal', 'slipper', 'maillot', 'bikini', 'miniskirt',
         'poncho', 'cardigan', 'lab_coat', 'apron', 'pajama', 'bow_tie', 'bolo_tie',
-        'stole', 'feather_boa', 'suspender', 'brassiere', 'diaper', 'swimming_trunks'
+        'stole', 'feather_boa', 'suspender', 'brassiere', 'diaper', 'swimming_trunks',
+        
+        # Machines and appliances (common misclassifications for tech images)
+        'cash_machine', 'atm', 'vending_machine', 'dishwasher', 'washer', 'dryer',
+        'refrigerator', 'fridge', 'microwave', 'oven', 'stove', 'toaster', 'blender',
+        'mixer', 'vacuum', 'fan', 'heater', 'air_conditioner', 'machine', 'appliance',
+        'slot_machine', 'pinball', 'arcade', 'jukebox', 'copier', 'fax',
+        
+        # Electronic components and hardware
+        'motherboard', 'circuit', 'chip', 'processor', 'cpu', 'gpu', 'ram', 'memory',
+        'hard_drive', 'ssd', 'power_supply', 'cable', 'wire', 'connector', 'port',
+        'switch', 'hub', 'server', 'rack', 'component', 'board', 'card', 'motherboard',
+        
+        # Office equipment
+        'photocopier', 'shredder', 'laminator', 'typewriter', 'fax_machine',
+        
+        # Screenshots and UI elements
+        'web', 'website', 'webpage', 'browser', 'app', 'interface', 'menu', 'button',
+        'icon', 'logo', 'text', 'chart', 'graph', 'diagram', 'screenshot', 'display'
     ]
     
     def __init__(self, use_pretrained_model: bool = True):
