@@ -393,6 +393,7 @@ class XrayValidator:
             # - Multiple thin elongated bright structures (bones/fingers)
             # - High contrast between bones and background
             # - Often have a "diverging" pattern from palm to fingers
+            # - Distinct vertical stripes pattern
             
             # Check for finger-like patterns (multiple narrow bright columns)
             # Look at the top half of the image (where fingers usually appear)
@@ -403,21 +404,48 @@ class XrayValidator:
             col_means = np.mean(top_region, axis=0)
             col_variance = np.var(col_means)
             
-            # High column variance suggests finger-like structures
-            has_finger_pattern = col_variance > 800  # Empirical threshold
+            # LOWERED threshold - was 800, now 300 to catch more hands
+            has_finger_pattern = col_variance > 300
+            
+            # Check for multiple peaks in column means (fingers create peaks)
+            peaks_count = 0
+            for i in range(5, len(col_means) - 5):
+                if col_means[i] > col_means[i-3] and col_means[i] > col_means[i+3]:
+                    if col_means[i] > np.mean(col_means) + 0.3 * np.std(col_means):
+                        peaks_count += 1
+            has_multiple_peaks = peaks_count >= 3  # 3+ peaks suggest fingers
             
             # Also check for the characteristic "spread" pattern of fingers
-            # Fingers diverge from center to edges at the top
             center_cols = col_means[width//3:2*width//3]
             edge_cols = np.concatenate([col_means[:width//4], col_means[3*width//4:]])
             
             # In hand X-rays, there's often high intensity variation at edges
-            edge_intensity_check = np.std(edge_cols) > np.std(center_cols) * 0.8
+            edge_intensity_check = np.std(edge_cols) > np.std(center_cols) * 0.5  # Lowered from 0.8
             
-            # Combine hand detection signals
-            is_likely_hand = has_finger_pattern and edge_intensity_check
+            # Check for long thin structures (hand/arm bones are long and narrow)
+            # This uses the aspect ratio of bright regions
+            bright_threshold = np.mean(img_array) + np.std(img_array)
+            bright_pixels = img_array > bright_threshold
+            bright_cols = np.sum(bright_pixels, axis=0)
+            narrow_bright_structures = np.sum(bright_cols > height * 0.3) < width * 0.4
             
-            # 7. Check for ribcage-like horizontal patterns (chest X-ray characteristic)
+            # CRITICAL: Brightness-based detection
+            # Hand X-rays are MUCH darker (mean ~50) than chest X-rays (mean ~130)
+            mean_brightness = np.mean(img_array)
+            is_very_dark = mean_brightness < 80  # Hand X-rays are dark
+            
+            # Top-center vs top-edges ratio (hand X-rays have higher ratio due to finger divergence)
+            top_region_full = img_array[:height//4, :]
+            top_center = top_region_full[:, width//4:3*width//4]
+            top_edges = np.concatenate([top_region_full[:, :width//4], top_region_full[:, 3*width//4:]], axis=1)
+            center_edge_ratio = np.mean(top_center) / (np.mean(top_edges) + 1e-6)
+            has_diverging_pattern = center_edge_ratio > 1.8  # Fingers diverge from palm
+            
+            # Combine hand detection signals - brightness is key
+            is_likely_hand = is_very_dark and (has_diverging_pattern or peaks_count >= 8)
+            
+            # Additional check: very dark + diverging pattern = definitely limb
+            is_definitely_limb = is_very_dark and (center_edge_ratio > 2.0 or narrow_bright_structures)
             # Ribs create horizontal dark bands
             row_means = np.mean(img_array[height//4:3*height//4, :], axis=1)  # Middle portion
             row_variance = np.var(row_means)
@@ -433,15 +461,18 @@ class XrayValidator:
                 "aspect_ok": aspect_ok,
                 "is_not_spine": is_not_spine,
                 "col_variance": round(col_variance, 2),
+                "peaks_count": peaks_count,
                 "has_finger_pattern": has_finger_pattern,
+                "has_multiple_peaks": has_multiple_peaks,
                 "is_likely_hand": is_likely_hand,
+                "is_definitely_limb": is_definitely_limb,
                 "has_horizontal_structure": has_horizontal_structure
             }
             
             # Decision logic - TWO PATHS:
             
             # PATH 1: Reject if clearly a hand/limb X-ray
-            if is_likely_hand:
+            if is_likely_hand or is_definitely_limb:
                 details["rejection_reason"] = "hand_xray_detected"
                 message_en = "This appears to be a hand or limb X-ray, not a chest X-ray. Please upload only chest X-ray images."
                 message_ar = "هذه الصورة تبدو أشعة يد أو طرف وليست أشعة صدر. من فضلك ارفع صور أشعة الصدر فقط."
