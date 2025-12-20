@@ -656,6 +656,9 @@ class XrayValidator:
                     
                     if is_xray:
                         # Image is X-ray - now check if it's a CHEST X-ray
+                        is_chest_result = None
+                        
+                        # Try chest classifier model first
                         if self.chest_classifier_model is not None:
                             try:
                                 # Predict: 0 = not_chest, 1 = chest
@@ -665,6 +668,7 @@ class XrayValidator:
                                 
                                 validation_details["chest_classifier_score"] = float(chest_pred)
                                 validation_details["is_chest_xray"] = is_chest
+                                validation_details["chest_method"] = "trained_model"
                                 
                                 if not is_chest:
                                     # It's an X-ray but NOT a chest X-ray
@@ -685,10 +689,28 @@ class XrayValidator:
                                     validation_details=validation_details
                                 )
                             except Exception as e:
-                                logger.warning(f"Chest classifier failed: {e}")
-                                # If chest classifier fails, accept the X-ray
+                                logger.warning(f"Chest classifier prediction failed: {e}")
+                                validation_details["chest_classifier_error"] = str(e)
+                                # Fall through to geometric check
                         
-                        # Fallback: accept X-ray without chest check
+                        # Fallback: Use geometric check (from _is_chest_xray method)
+                        try:
+                            is_chest, chest_conf, msg_en, msg_ar, chest_details = self._is_chest_xray(image)
+                            validation_details["chest_geometric_check"] = chest_details
+                            validation_details["chest_method"] = "geometric"
+                            
+                            if not is_chest:
+                                return ValidationResult(
+                                    is_valid=False,
+                                    confidence=0.0,
+                                    message_en=msg_en,
+                                    message_ar=msg_ar,
+                                    validation_details=validation_details
+                                )
+                        except Exception as e:
+                            logger.warning(f"Geometric check failed: {e}")
+                        
+                        # Accept as X-ray
                         return ValidationResult(
                             is_valid=True,
                             confidence=confidence,
