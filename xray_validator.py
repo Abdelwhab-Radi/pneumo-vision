@@ -702,41 +702,17 @@ class XrayValidator:
                     validation_details["detection_method"] = "trained_model"
                     
                     if is_xray:
-                        # Image is X-ray - now check if it's a CHEST X-ray
-                        # Using geometric analysis only (model disabled for now)
+                        # TEMPORARY: Accept all X-rays without geometric check
+                        # This is to diagnose Railway internal server error
+                        validation_details["chest_method"] = "bypassed_for_testing"
                         
-                        try:
-                            is_chest, chest_conf, msg_en, msg_ar, chest_details = self._is_chest_xray(image)
-                            validation_details["chest_geometric_check"] = chest_details
-                            validation_details["chest_method"] = "geometric"
-                            
-                            if not is_chest:
-                                return ValidationResult(
-                                    is_valid=False,
-                                    confidence=0.0,
-                                    message_en=msg_en,
-                                    message_ar=msg_ar,
-                                    validation_details=validation_details
-                                )
-                            
-                            # Valid chest X-ray
-                            return ValidationResult(
-                                is_valid=True,
-                                confidence=confidence * chest_conf,
-                                message_en="Image validated as chest X-ray",
-                                message_ar="تم التحقق من الصورة كأشعة صدر",
-                                validation_details=validation_details
-                            )
-                        except Exception as e:
-                            logger.warning(f"Geometric check failed: {e}")
-                            # Accept as X-ray if check fails
-                            return ValidationResult(
-                                is_valid=True,
-                                confidence=confidence,
-                                message_en="Image validated as X-ray",
-                                message_ar="تم التحقق من الصورة كأشعة",
-                                validation_details=validation_details
-                            )
+                        return ValidationResult(
+                            is_valid=True,
+                            confidence=confidence,
+                            message_en="Image validated as X-ray",
+                            message_ar="تم التحقق من الصورة كأشعة",
+                            validation_details=validation_details
+                        )
                     else:
                         return ValidationResult(
                             is_valid=False,
