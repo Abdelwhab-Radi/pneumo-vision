@@ -656,44 +656,8 @@ class XrayValidator:
                     
                     if is_xray:
                         # Image is X-ray - now check if it's a CHEST X-ray
-                        is_chest_result = None
+                        # Using geometric analysis only (model disabled for now)
                         
-                        # Try chest classifier model first
-                        if self.chest_classifier_model is not None:
-                            try:
-                                # Predict: 0 = not_chest, 1 = chest
-                                chest_pred = self.chest_classifier_model.predict(img_array, verbose=0)[0][0]
-                                is_chest = chest_pred > 0.5
-                                chest_confidence = float(chest_pred) if is_chest else float(1 - chest_pred)
-                                
-                                validation_details["chest_classifier_score"] = float(chest_pred)
-                                validation_details["is_chest_xray"] = is_chest
-                                validation_details["chest_method"] = "trained_model"
-                                
-                                if not is_chest:
-                                    # It's an X-ray but NOT a chest X-ray
-                                    return ValidationResult(
-                                        is_valid=False,
-                                        confidence=0.0,
-                                        message_en="This appears to be an X-ray but not a chest X-ray (e.g., hand, pelvis, spine). Please upload only chest X-ray images.",
-                                        message_ar="هذه الصورة تبدو أشعة لكنها ليست أشعة صدر (مثل اليد أو الحوض أو العمود الفقري). من فضلك ارفع صور أشعة الصدر فقط.",
-                                        validation_details=validation_details
-                                    )
-                                
-                                # Valid chest X-ray!
-                                return ValidationResult(
-                                    is_valid=True,
-                                    confidence=confidence * chest_confidence,
-                                    message_en="Image validated as chest X-ray",
-                                    message_ar="تم التحقق من الصورة كأشعة صدر",
-                                    validation_details=validation_details
-                                )
-                            except Exception as e:
-                                logger.warning(f"Chest classifier prediction failed: {e}")
-                                validation_details["chest_classifier_error"] = str(e)
-                                # Fall through to geometric check
-                        
-                        # Fallback: Use geometric check (from _is_chest_xray method)
                         try:
                             is_chest, chest_conf, msg_en, msg_ar, chest_details = self._is_chest_xray(image)
                             validation_details["chest_geometric_check"] = chest_details
@@ -707,17 +671,25 @@ class XrayValidator:
                                     message_ar=msg_ar,
                                     validation_details=validation_details
                                 )
+                            
+                            # Valid chest X-ray
+                            return ValidationResult(
+                                is_valid=True,
+                                confidence=confidence * chest_conf,
+                                message_en="Image validated as chest X-ray",
+                                message_ar="تم التحقق من الصورة كأشعة صدر",
+                                validation_details=validation_details
+                            )
                         except Exception as e:
                             logger.warning(f"Geometric check failed: {e}")
-                        
-                        # Accept as X-ray
-                        return ValidationResult(
-                            is_valid=True,
-                            confidence=confidence,
-                            message_en="Image validated as X-ray",
-                            message_ar="تم التحقق من الصورة كأشعة",
-                            validation_details=validation_details
-                        )
+                            # Accept as X-ray if check fails
+                            return ValidationResult(
+                                is_valid=True,
+                                confidence=confidence,
+                                message_en="Image validated as X-ray",
+                                message_ar="تم التحقق من الصورة كأشعة",
+                                validation_details=validation_details
+                            )
                     else:
                         return ValidationResult(
                             is_valid=False,
