@@ -193,11 +193,13 @@ class XrayValidator:
         self.use_pretrained_model = use_pretrained_model
         self.mobilenet_model = None
         self.decode_predictions = None
-        self.xray_detector_model = None  # New trained model
+        self.xray_detector_model = None  # X-ray vs non-X-ray model
+        self.chest_classifier_model = None  # Chest X-ray vs other X-ray model
         
         if use_pretrained_model:
             self._load_pretrained_model()
             self._load_xray_detector()  # Load trained detector
+            self._load_chest_classifier()  # Load chest classifier
     
     def _load_xray_detector(self):
         """Load the trained X-ray detector model"""
@@ -214,6 +216,22 @@ class XrayValidator:
                 
         except Exception as e:
             logger.warning(f"Could not load X-ray detector: {e}")
+    
+    def _load_chest_classifier(self):
+        """Load the chest classifier model (chest vs other X-rays)"""
+        try:
+            tf, keras, _ = _load_tensorflow()
+            
+            model_path = 'results/models/chest_classifier.keras'
+            if os.path.exists(model_path):
+                logger.info("Loading chest classifier model...")
+                self.chest_classifier_model = keras.models.load_model(model_path)
+                logger.info("✓ Chest classifier model loaded")
+            else:
+                logger.warning(f"Chest classifier model not found at {model_path}")
+                
+        except Exception as e:
+            logger.warning(f"Could not load chest classifier: {e}")
     
     def _load_pretrained_model(self):
         """Load MobileNetV2 for image classification"""
@@ -637,9 +655,40 @@ class XrayValidator:
                     validation_details["detection_method"] = "trained_model"
                     
                     if is_xray:
-                        # SIMPLIFIED: Trust the trained X-ray detector model
-                        # No additional geometric checks - they are unreliable
-                        # The pneumonia model will handle any edge cases with low confidence
+                        # Image is X-ray - now check if it's a CHEST X-ray
+                        if self.chest_classifier_model is not None:
+                            try:
+                                # Predict: 0 = not_chest, 1 = chest
+                                chest_pred = self.chest_classifier_model.predict(img_array, verbose=0)[0][0]
+                                is_chest = chest_pred > 0.5
+                                chest_confidence = float(chest_pred) if is_chest else float(1 - chest_pred)
+                                
+                                validation_details["chest_classifier_score"] = float(chest_pred)
+                                validation_details["is_chest_xray"] = is_chest
+                                
+                                if not is_chest:
+                                    # It's an X-ray but NOT a chest X-ray
+                                    return ValidationResult(
+                                        is_valid=False,
+                                        confidence=0.0,
+                                        message_en="This appears to be an X-ray but not a chest X-ray (e.g., hand, pelvis, spine). Please upload only chest X-ray images.",
+                                        message_ar="هذه الصورة تبدو أشعة لكنها ليست أشعة صدر (مثل اليد أو الحوض أو العمود الفقري). من فضلك ارفع صور أشعة الصدر فقط.",
+                                        validation_details=validation_details
+                                    )
+                                
+                                # Valid chest X-ray!
+                                return ValidationResult(
+                                    is_valid=True,
+                                    confidence=confidence * chest_confidence,
+                                    message_en="Image validated as chest X-ray",
+                                    message_ar="تم التحقق من الصورة كأشعة صدر",
+                                    validation_details=validation_details
+                                )
+                            except Exception as e:
+                                logger.warning(f"Chest classifier failed: {e}")
+                                # If chest classifier fails, accept the X-ray
+                        
+                        # Fallback: accept X-ray without chest check
                         return ValidationResult(
                             is_valid=True,
                             confidence=confidence,
