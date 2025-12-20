@@ -637,14 +637,27 @@ class XrayValidator:
                     validation_details["detection_method"] = "trained_model"
                     
                     if is_xray:
-                        # SIMPLIFIED: Trust the trained X-ray detector model
-                        # No additional geometric checks - they are unreliable
-                        # The pneumonia model will handle any edge cases with low confidence
+                        # Image is detected as X-ray - now check if it's a CHEST X-ray
+                        # This is critical to reject hand/limb/spine X-rays
+                        is_chest, chest_conf, chest_msg_en, chest_msg_ar, chest_details = self._is_chest_xray(image)
+                        validation_details["chest_xray_check"] = chest_details
+                        
+                        if not is_chest:
+                            # It's an X-ray but NOT a chest X-ray (e.g., hand, spine)
+                            return ValidationResult(
+                                is_valid=False,
+                                confidence=0.0,
+                                message_en=chest_msg_en,
+                                message_ar=chest_msg_ar,
+                                validation_details=validation_details
+                            )
+                        
+                        # Valid chest X-ray
                         return ValidationResult(
                             is_valid=True,
-                            confidence=confidence,
-                            message_en="Image validated as X-ray",
-                            message_ar="تم التحقق من الصورة كأشعة",
+                            confidence=confidence * chest_conf,
+                            message_en="Image validated as chest X-ray",
+                            message_ar="تم التحقق من الصورة كأشعة صدر",
                             validation_details=validation_details
                         )
                     else:
