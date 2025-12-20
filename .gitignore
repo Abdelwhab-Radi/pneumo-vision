@@ -116,4 +116,3 @@ Thumbs.db
 *.bak
 *.tmp
 *.temp
-results/models/model_stage1_frozen.keras
