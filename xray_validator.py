@@ -199,7 +199,7 @@ class XrayValidator:
         if use_pretrained_model:
             self._load_pretrained_model()
             self._load_xray_detector()  # Load trained detector
-            self._load_chest_classifier()  # Load chest classifier
+            # self._load_chest_classifier()  # Disabled - using geometric check instead
     
     def _load_xray_detector(self):
         """Load the trained X-ray detector model"""
