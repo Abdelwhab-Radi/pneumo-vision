@@ -356,10 +356,13 @@ class XrayValidator:
                 return False, 0.0, msg_en, msg_ar, details
             
             # 3. Check for bilateral symmetry (chest X-rays are symmetric)
-            left_half = img_array[:, :width//2]
-            right_half = img_array[:, width//2:]
+            half_width = width // 2
+            left_half = img_array[:, :half_width]
+            right_half = img_array[:, width-half_width:]  # Same size as left_half
             right_half_flipped = np.fliplr(right_half)
-            symmetry_diff = np.abs(left_half - right_half_flipped)
+            # Ensure same dimensions
+            min_w = min(left_half.shape[1], right_half_flipped.shape[1])
+            symmetry_diff = np.abs(left_half[:, :min_w] - right_half_flipped[:, :min_w])
             symmetry_score = 1 - (np.mean(symmetry_diff) / 255.0)
             
             # 4. Check for dark regions on both sides (lungs)
