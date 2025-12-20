@@ -446,6 +446,13 @@ class XrayValidator:
             
             # Additional check: very dark + diverging pattern = definitely limb
             is_definitely_limb = is_very_dark and (center_edge_ratio > 2.0 or narrow_bright_structures)
+            
+            # PELVIS DETECTION: Pelvis X-rays have brighter top, darker bottom (ratio > 1.25)
+            top_half = img_array[:height//2, :]
+            bottom_half = img_array[height//2:, :]
+            top_bottom_ratio = np.mean(top_half) / (np.mean(bottom_half) + 1e-6)
+            is_likely_pelvis = top_bottom_ratio > 1.20 and mean_brightness < 100
+            
             # Ribs create horizontal dark bands
             row_means = np.mean(img_array[height//4:3*height//4, :], axis=1)  # Middle portion
             row_variance = np.var(row_means)
@@ -466,6 +473,8 @@ class XrayValidator:
                 "has_multiple_peaks": has_multiple_peaks,
                 "is_likely_hand": is_likely_hand,
                 "is_definitely_limb": is_definitely_limb,
+                "is_likely_pelvis": is_likely_pelvis,
+                "top_bottom_ratio": round(top_bottom_ratio, 3),
                 "has_horizontal_structure": has_horizontal_structure
             }
             
@@ -476,6 +485,13 @@ class XrayValidator:
                 details["rejection_reason"] = "hand_xray_detected"
                 message_en = "This appears to be a hand or limb X-ray, not a chest X-ray. Please upload only chest X-ray images."
                 message_ar = "هذه الصورة تبدو أشعة يد أو طرف وليست أشعة صدر. من فضلك ارفع صور أشعة الصدر فقط."
+                return False, 0.0, message_en, message_ar, details
+            
+            # PATH 1.5: Reject if likely pelvis X-ray
+            if is_likely_pelvis:
+                details["rejection_reason"] = "pelvis_xray_detected"
+                message_en = "This appears to be a pelvis X-ray, not a chest X-ray. Please upload only chest X-ray images."
+                message_ar = "هذه الصورة تبدو أشعة حوض وليست أشعة صدر. من فضلك ارفع صور أشعة الصدر فقط."
                 return False, 0.0, message_en, message_ar, details
             
             # PATH 2: Check positive indicators for chest X-ray (more permissive)
