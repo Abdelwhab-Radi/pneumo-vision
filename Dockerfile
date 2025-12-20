@@ -132,3 +132,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
 
 # Use the startup script
 CMD ["/app/start.sh"]
+# Trigger rebuild Sun Dec 21 01:18:24 EET 2025
