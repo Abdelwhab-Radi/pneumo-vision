@@ -298,6 +298,145 @@ class XrayValidator:
             "mid_tone_ratio": round(mid_pixels, 3)
         }
     
+    def _is_chest_xray(self, image: Image.Image) -> Tuple[bool, float, str, str, Dict]:
+        """
+        Check if the X-ray image is specifically a CHEST X-ray (not hand, spine, etc.)
+        
+        Uses geometric and structural analysis to identify chest X-ray characteristics:
+        1. Aspect ratio: Chest X-rays are typically square or slightly wider (0.8-1.4)
+        2. Bilateral symmetry: Lungs create symmetric dark regions on left/right
+        3. Central bright region: Heart/mediastinum in the center
+        4. Dark regions on sides: Lungs appear as dark areas on both sides
+        
+        Args:
+            image: PIL Image object (already validated as X-ray)
+            
+        Returns:
+            Tuple of (is_chest_xray, confidence, message_en, message_ar, details)
+        """
+        try:
+            # Convert to grayscale numpy array
+            if image.mode != 'L':
+                gray_image = image.convert('L')
+            else:
+                gray_image = image
+            
+            # Resize to standard size for consistent analysis
+            analysis_size = (256, 256)
+            gray_resized = gray_image.resize(analysis_size)
+            img_array = np.array(gray_resized, dtype=np.float32)
+            
+            height, width = img_array.shape
+            
+            # 1. Check aspect ratio (chest X-rays are typically 0.8-1.4)
+            original_aspect = image.width / image.height
+            aspect_ok = 0.7 <= original_aspect <= 1.5
+            
+            # 2. Split image into left and right halves for symmetry analysis
+            left_half = img_array[:, :width//2]
+            right_half = img_array[:, width//2:]
+            right_half_flipped = np.fliplr(right_half)
+            
+            # Calculate symmetry score (chest X-rays are quite symmetric)
+            symmetry_diff = np.abs(left_half - right_half_flipped)
+            symmetry_score = 1 - (np.mean(symmetry_diff) / 255.0)
+            
+            # 3. Analyze vertical structure (chest X-rays have specific vertical patterns)
+            # Spine X-rays have a central vertical bright line, chest X-rays have different pattern
+            center_strip = img_array[:, width//3:2*width//3]  # Central third
+            side_strips = np.concatenate([img_array[:, :width//4], img_array[:, 3*width//4:]], axis=1)
+            
+            center_mean = np.mean(center_strip)
+            sides_mean = np.mean(side_strips)
+            
+            # In chest X-rays: center (heart) is brighter, sides (lungs) are darker
+            # In spine X-rays: center (spine) is very bright, continuous line
+            center_sides_ratio = center_mean / (sides_mean + 1e-6)
+            
+            # 4. Check for lung-like dark regions on both sides
+            # Divide into quadrants
+            top_left = img_array[:height//2, :width//2]
+            top_right = img_array[:height//2, width//2:]
+            bottom_left = img_array[height//2:, :width//2]
+            bottom_right = img_array[height//2:, width//2:]
+            
+            # Lung regions should be relatively dark (low pixel values)
+            left_lung_darkness = np.mean(top_left) < np.mean(img_array)
+            right_lung_darkness = np.mean(top_right) < np.mean(img_array)
+            both_lungs_dark = left_lung_darkness and right_lung_darkness
+            
+            # 5. Check horizontal vs vertical intensity variance
+            # Spine X-rays have strong vertical structure
+            # Chest X-rays have more balanced structure
+            horizontal_variance = np.var(np.mean(img_array, axis=0))  # variance across columns
+            vertical_variance = np.var(np.mean(img_array, axis=1))    # variance across rows
+            
+            # If vertical variance >> horizontal variance, likely spine
+            variance_ratio = vertical_variance / (horizontal_variance + 1e-6)
+            is_not_spine = variance_ratio < 3.0  # Spine X-rays have high vertical dominance
+            
+            # 6. Check for elongated structure (spine/limbs are typically elongated)
+            # Hand/foot X-rays often have extreme aspect ratios or specific patterns
+            is_not_elongated = 0.75 <= original_aspect <= 1.35
+            
+            # Compile results
+            details = {
+                "aspect_ratio": round(original_aspect, 3),
+                "symmetry_score": round(symmetry_score, 3),
+                "center_sides_ratio": round(center_sides_ratio, 3),
+                "both_lungs_dark": both_lungs_dark,
+                "variance_ratio": round(variance_ratio, 3),
+                "aspect_ok": aspect_ok,
+                "is_not_spine": is_not_spine,
+                "is_not_elongated": is_not_elongated
+            }
+            
+            # Decision logic
+            # Must pass multiple checks to be considered chest X-ray
+            checks_passed = 0
+            total_checks = 5
+            
+            if aspect_ok:
+                checks_passed += 1
+            if symmetry_score > 0.7:  # High symmetry (lungs are symmetric)
+                checks_passed += 1
+            if both_lungs_dark:
+                checks_passed += 1
+            if is_not_spine:
+                checks_passed += 1
+            if is_not_elongated:
+                checks_passed += 1
+            
+            confidence = checks_passed / total_checks
+            
+            # Need at least 3 out of 5 checks to pass
+            is_chest = checks_passed >= 3
+            
+            if is_chest:
+                message_en = "Image structure is consistent with chest X-ray"
+                message_ar = "بنية الصورة متوافقة مع أشعة الصدر"
+            else:
+                # Determine what type of X-ray it might be
+                if not is_not_spine:
+                    message_en = "This appears to be a spine X-ray, not a chest X-ray. Please upload only chest X-ray images."
+                    message_ar = "هذه الصورة تبدو أشعة عمود فقري وليست أشعة صدر. من فضلك ارفع صور أشعة الصدر فقط."
+                elif not is_not_elongated:
+                    message_en = "This appears to be a limb X-ray (hand, foot, or arm), not a chest X-ray. Please upload only chest X-ray images."
+                    message_ar = "هذه الصورة تبدو أشعة طرف (يد أو قدم أو ذراع) وليست أشعة صدر. من فضلك ارفع صور أشعة الصدر فقط."
+                else:
+                    message_en = "This X-ray does not appear to be a chest X-ray. Please upload only chest X-ray images."
+                    message_ar = "هذه الأشعة لا تبدو أشعة صدر. من فضلك ارفع صور أشعة الصدر فقط."
+            
+            details["checks_passed"] = checks_passed
+            details["total_checks"] = total_checks
+            
+            return is_chest, confidence, message_en, message_ar, details
+            
+        except Exception as e:
+            logger.warning(f"Chest X-ray geometric validation failed: {e}")
+            # On error, assume it might be chest X-ray (don't block)
+            return True, 0.5, "", "", {"error": str(e)}
+    
     def _validate_characteristics(self, characteristics: Dict) -> Tuple[bool, float, str, str]:
         """
         Validate image based on characteristics analysis.
@@ -464,9 +603,24 @@ class XrayValidator:
                     validation_details["detection_method"] = "trained_model"
                     
                     if is_xray:
+                        # ADDITIONAL CHECK: Verify it's specifically a CHEST X-ray
+                        is_chest, chest_conf, chest_msg_en, chest_msg_ar, chest_details = self._is_chest_xray(image)
+                        validation_details["chest_xray_analysis"] = chest_details
+                        
+                        if not is_chest:
+                            # It's an X-ray, but NOT a chest X-ray
+                            return ValidationResult(
+                                is_valid=False,
+                                confidence=0.0,
+                                message_en=chest_msg_en,
+                                message_ar=chest_msg_ar,
+                                validation_details=validation_details
+                            )
+                        
+                        # It's a valid chest X-ray
                         return ValidationResult(
                             is_valid=True,
-                            confidence=confidence,
+                            confidence=confidence * chest_conf,  # Combined confidence
                             message_en="Image validated as chest X-ray",
                             message_ar="تم التحقق من الصورة كأشعة صدر",
                             validation_details=validation_details
@@ -487,31 +641,35 @@ class XrayValidator:
             validation_details["detection_method"] = "grayscale_threshold"
             
             # Pure grayscale images are likely X-rays
-            if grayscale_score >= 0.99:
+            if grayscale_score >= 0.935:
+                # Also check if it's specifically a CHEST X-ray
+                is_chest, chest_conf, chest_msg_en, chest_msg_ar, chest_details = self._is_chest_xray(image)
+                validation_details["chest_xray_analysis"] = chest_details
+                
+                if not is_chest:
+                    # It's grayscale (likely X-ray), but NOT a chest X-ray
+                    return ValidationResult(
+                        is_valid=False,
+                        confidence=0.0,
+                        message_en=chest_msg_en,
+                        message_ar=chest_msg_ar,
+                        validation_details=validation_details
+                    )
+                
                 return ValidationResult(
                     is_valid=True,
-                    confidence=1.0,
+                    confidence=grayscale_score * chest_conf,
                     message_en="Image validated as chest X-ray",
                     message_ar="تم التحقق من الصورة كأشعة صدر",
                     validation_details=validation_details
                 )
             
             # Low grayscale = not X-ray
-            if grayscale_score < 0.935:
-                return ValidationResult(
-                    is_valid=False,
-                    confidence=0.0,
-                    message_en="This image appears to be a color photograph. Please upload a chest X-ray image.",
-                    message_ar="هذه الصورة تبدو صورة ملونة. من فضلك ارفع صورة أشعة صدر.",
-                    validation_details=validation_details
-                )
-            
-            # Medium grayscale - accept with lower confidence
             return ValidationResult(
-                is_valid=True,
-                confidence=grayscale_score,
-                message_en="Image validated as potential chest X-ray",
-                message_ar="تم التحقق من الصورة كأشعة صدر محتملة",
+                is_valid=False,
+                confidence=0.0,
+                message_en="This image appears to be a color photograph. Please upload a chest X-ray image.",
+                message_ar="هذه الصورة تبدو صورة ملونة. من فضلك ارفع صورة أشعة صدر.",
                 validation_details=validation_details
             )
             
