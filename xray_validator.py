@@ -637,26 +637,14 @@ class XrayValidator:
                     validation_details["detection_method"] = "trained_model"
                     
                     if is_xray:
-                        # ADDITIONAL CHECK: Verify it's specifically a CHEST X-ray
-                        is_chest, chest_conf, chest_msg_en, chest_msg_ar, chest_details = self._is_chest_xray(image)
-                        validation_details["chest_xray_analysis"] = chest_details
-                        
-                        if not is_chest:
-                            # It's an X-ray, but NOT a chest X-ray
-                            return ValidationResult(
-                                is_valid=False,
-                                confidence=0.0,
-                                message_en=chest_msg_en,
-                                message_ar=chest_msg_ar,
-                                validation_details=validation_details
-                            )
-                        
-                        # It's a valid chest X-ray
+                        # SIMPLIFIED: Trust the trained X-ray detector model
+                        # No additional geometric checks - they are unreliable
+                        # The pneumonia model will handle any edge cases with low confidence
                         return ValidationResult(
                             is_valid=True,
-                            confidence=confidence * chest_conf,  # Combined confidence
-                            message_en="Image validated as chest X-ray",
-                            message_ar="تم التحقق من الصورة كأشعة صدر",
+                            confidence=confidence,
+                            message_en="Image validated as X-ray",
+                            message_ar="تم التحقق من الصورة كأشعة",
                             validation_details=validation_details
                         )
                     else:
@@ -676,25 +664,12 @@ class XrayValidator:
             
             # Pure grayscale images are likely X-rays
             if grayscale_score >= 0.935:
-                # Also check if it's specifically a CHEST X-ray
-                is_chest, chest_conf, chest_msg_en, chest_msg_ar, chest_details = self._is_chest_xray(image)
-                validation_details["chest_xray_analysis"] = chest_details
-                
-                if not is_chest:
-                    # It's grayscale (likely X-ray), but NOT a chest X-ray
-                    return ValidationResult(
-                        is_valid=False,
-                        confidence=0.0,
-                        message_en=chest_msg_en,
-                        message_ar=chest_msg_ar,
-                        validation_details=validation_details
-                    )
-                
+                # SIMPLIFIED: Trust grayscale threshold - no geometric checks
                 return ValidationResult(
                     is_valid=True,
-                    confidence=grayscale_score * chest_conf,
-                    message_en="Image validated as chest X-ray",
-                    message_ar="تم التحقق من الصورة كأشعة صدر",
+                    confidence=grayscale_score,
+                    message_en="Image validated as X-ray",
+                    message_ar="تم التحقق من الصورة كأشعة",
                     validation_details=validation_details
                 )
             
