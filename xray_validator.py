@@ -300,14 +300,17 @@ class XrayValidator:
     
     def _is_chest_xray(self, image: Image.Image) -> Tuple[bool, float, str, str, Dict]:
         """
-        Check if the X-ray image is specifically a CHEST X-ray (not hand, spine, etc.)
+        STRICT check if the X-ray image is specifically a CHEST X-ray.
         
-        Uses geometric and structural analysis to identify chest X-ray characteristics:
-        1. Aspect ratio: Chest X-rays are typically square or slightly wider (0.7-1.5)
-        2. Bilateral symmetry: Lungs create symmetric dark regions on left/right
-        3. Central bright region: Heart/mediastinum in the center
-        4. Dark regions on sides: Lungs appear as dark areas on both sides
-        5. Detection of limb X-rays (hands have distinct finger patterns)
+        Rejects:
+        - Hand/arm X-rays (elongated shapes, finger patterns)
+        - Leg/knee X-rays (long vertical bones)
+        - Pelvis X-rays (wide horizontal bone structure at bottom)
+        - Spine X-rays (vertical central structure)
+        - Full body X-rays (wrong aspect ratio)
+        
+        Accepts ONLY:
+        - Frontal chest X-rays (PA/AP view) with visible lung fields
         
         Args:
             image: PIL Image object (already validated as X-ray)
@@ -329,147 +332,149 @@ class XrayValidator:
             
             height, width = img_array.shape
             
-            # 1. Check aspect ratio (chest X-rays are typically 0.7-1.5)
+            # 1. Aspect ratio check - chest X-rays are nearly square (0.7-1.4)
             original_aspect = image.width / image.height
-            aspect_ok = 0.6 <= original_aspect <= 1.6
+            is_square_ish = 0.7 <= original_aspect <= 1.4
             
-            # 2. Split image into left and right halves for symmetry analysis
+            # 2. Reject elongated horizontal images (arm, leg X-rays are often 2:1 or wider)
+            is_too_wide = original_aspect > 1.8
+            is_too_tall = original_aspect < 0.5
+            
+            if is_too_wide or is_too_tall:
+                details = {
+                    "aspect_ratio": round(original_aspect, 3),
+                    "rejection_reason": "wrong_aspect_ratio",
+                    "is_too_wide": is_too_wide,
+                    "is_too_tall": is_too_tall
+                }
+                if is_too_wide:
+                    msg_en = "This appears to be a limb X-ray (arm/leg). Chest X-rays have a more square shape. Please upload only chest X-ray images."
+                    msg_ar = "هذه الصورة تبدو أشعة طرف (ذراع/ساق). أشعة الصدر لها شكل مربع أكثر. من فضلك ارفع صور أشعة الصدر فقط."
+                else:
+                    msg_en = "This X-ray has unusual proportions for a chest X-ray. Please upload only frontal chest X-ray images."
+                    msg_ar = "هذه الأشعة لها أبعاد غير معتادة لأشعة الصدر. من فضلك ارفع صور أشعة الصدر الأمامية فقط."
+                return False, 0.0, msg_en, msg_ar, details
+            
+            # 3. Check for bilateral symmetry (chest X-rays are symmetric)
             left_half = img_array[:, :width//2]
             right_half = img_array[:, width//2:]
             right_half_flipped = np.fliplr(right_half)
-            
-            # Calculate symmetry score (chest X-rays are quite symmetric)
-            # Lowered threshold to allow watermarked images
             symmetry_diff = np.abs(left_half - right_half_flipped)
             symmetry_score = 1 - (np.mean(symmetry_diff) / 255.0)
             
-            # 3. Analyze vertical structure (chest X-rays have specific vertical patterns)
-            center_strip = img_array[:, width//3:2*width//3]  # Central third
-            side_strips = np.concatenate([img_array[:, :width//4], img_array[:, 3*width//4:]], axis=1)
+            # 4. Check for dark regions on both sides (lungs)
+            # In chest X-rays, the left and right sides (lung areas) are darker than center
+            left_quarter = img_array[:, :width//4]
+            right_quarter = img_array[:, 3*width//4:]
+            center_half = img_array[:, width//4:3*width//4]
             
-            center_mean = np.mean(center_strip)
-            sides_mean = np.mean(side_strips)
+            left_mean = np.mean(left_quarter)
+            right_mean = np.mean(right_quarter)
+            center_mean = np.mean(center_half)
             
-            # In chest X-rays: center (heart) is brighter, sides (lungs) are darker
-            center_sides_ratio = center_mean / (sides_mean + 1e-6)
+            # Lungs should be darker than mediastinum (center)
+            has_lung_pattern = (left_mean < center_mean * 1.1) and (right_mean < center_mean * 1.1)
             
-            # 4. Check for lung-like dark regions on both sides
-            top_left = img_array[:height//2, :width//2]
-            top_right = img_array[:height//2, width//2:]
-            
-            # Lung regions should be relatively dark (low pixel values)
-            left_lung_darkness = np.mean(top_left) < np.mean(img_array) * 1.2
-            right_lung_darkness = np.mean(top_right) < np.mean(img_array) * 1.2
-            both_lungs_dark = left_lung_darkness and right_lung_darkness
-            
-            # 5. Check horizontal vs vertical intensity variance
-            horizontal_variance = np.var(np.mean(img_array, axis=0))  # variance across columns
-            vertical_variance = np.var(np.mean(img_array, axis=1))    # variance across rows
-            
-            # If vertical variance >> horizontal variance, likely spine
-            variance_ratio = vertical_variance / (horizontal_variance + 1e-6)
-            is_not_spine = variance_ratio < 4.0  # More permissive
-            
-            # 6. CRITICAL: Detect hand/limb X-rays
-            # Hand X-rays have characteristic features:
-            # - Multiple thin elongated bright structures (bones/fingers)
-            # - High contrast between bones and background
-            # - Often have a "diverging" pattern from palm to fingers
-            
-            # Check for finger-like patterns (multiple narrow bright columns)
-            # Look at the top half of the image (where fingers usually appear)
-            top_region = img_array[:height//2, :]
-            
-            # Calculate column-wise intensity variance
-            # Fingers create alternating bright (bone) and dark (tissue) vertical patterns
-            col_means = np.mean(top_region, axis=0)
+            # 5. Check for hand/arm pattern - fingers create distinct vertical patterns
+            top_quarter = img_array[:height//4, :]
+            col_means = np.mean(top_quarter, axis=0)
             col_variance = np.var(col_means)
             
-            # High column variance suggests finger-like structures
-            has_finger_pattern = col_variance > 800  # Empirical threshold
+            # Very high column variance = fingers
+            # Lower threshold to catch more hand X-rays
+            has_finger_pattern = col_variance > 400
             
-            # Also check for the characteristic "spread" pattern of fingers
-            # Fingers diverge from center to edges at the top
-            center_cols = col_means[width//3:2*width//3]
-            edge_cols = np.concatenate([col_means[:width//4], col_means[3*width//4:]])
+            # Also check if the image has a lot of "branches" (like fingers spread out)
+            # Fingers create peaks in the column means
+            peaks = 0
+            for i in range(1, len(col_means) - 1):
+                if col_means[i] > col_means[i-1] and col_means[i] > col_means[i+1]:
+                    if col_means[i] > np.mean(col_means) + np.std(col_means):
+                        peaks += 1
+            has_multiple_peaks = peaks >= 3  # Multiple finger-like structures
             
-            # In hand X-rays, there's often high intensity variation at edges
-            edge_intensity_check = np.std(edge_cols) > np.std(center_cols) * 0.8
+            is_likely_hand = has_finger_pattern or has_multiple_peaks
             
-            # Combine hand detection signals
-            is_likely_hand = has_finger_pattern and edge_intensity_check
+            # 6. Check for spine pattern (bright vertical line in center)
+            center_column = img_array[:, width//2-10:width//2+10]
+            center_brightness = np.mean(center_column)
+            overall_brightness = np.mean(img_array)
+            has_spine_pattern = center_brightness > overall_brightness * 1.3
             
-            # 7. Check for ribcage-like horizontal patterns (chest X-ray characteristic)
-            # Ribs create horizontal dark bands
-            row_means = np.mean(img_array[height//4:3*height//4, :], axis=1)  # Middle portion
-            row_variance = np.var(row_means)
-            has_horizontal_structure = row_variance > 200  # Ribs create variation
+            # For chest X-rays, stomach area (bottom) typically darker than chest (top)
+            top_half = img_array[:height//2, :]
+            bottom_half = img_array[height//2:, :]
+            chest_vs_abdomen = np.mean(top_half) / (np.mean(bottom_half) + 1e-6)
             
-            # Compile results
+            # Compile details
             details = {
                 "aspect_ratio": round(original_aspect, 3),
+                "is_square_ish": is_square_ish,
                 "symmetry_score": round(symmetry_score, 3),
-                "center_sides_ratio": round(center_sides_ratio, 3),
-                "both_lungs_dark": both_lungs_dark,
-                "variance_ratio": round(variance_ratio, 3),
-                "aspect_ok": aspect_ok,
-                "is_not_spine": is_not_spine,
+                "left_mean": round(left_mean, 2),
+                "right_mean": round(right_mean, 2),
+                "center_mean": round(center_mean, 2),
+                "has_lung_pattern": has_lung_pattern,
                 "col_variance": round(col_variance, 2),
+                "peaks_detected": peaks,
                 "has_finger_pattern": has_finger_pattern,
+                "has_multiple_peaks": has_multiple_peaks,
                 "is_likely_hand": is_likely_hand,
-                "has_horizontal_structure": has_horizontal_structure
+                "has_spine_pattern": has_spine_pattern,
+                "chest_vs_abdomen": round(chest_vs_abdomen, 3)
             }
             
-            # Decision logic - TWO PATHS:
+            # REJECTION LOGIC - be strict!
             
-            # PATH 1: Reject if clearly a hand/limb X-ray
+            # Reject if hand/arm pattern detected
             if is_likely_hand:
-                details["rejection_reason"] = "hand_xray_detected"
-                message_en = "This appears to be a hand or limb X-ray, not a chest X-ray. Please upload only chest X-ray images."
-                message_ar = "هذه الصورة تبدو أشعة يد أو طرف وليست أشعة صدر. من فضلك ارفع صور أشعة الصدر فقط."
-                return False, 0.0, message_en, message_ar, details
+                details["rejection_reason"] = "hand_limb_pattern"
+                msg_en = "This appears to be a hand or arm X-ray, not a chest X-ray. Please upload only chest X-ray images."
+                msg_ar = "هذه الصورة تبدو أشعة يد أو ذراع وليست أشعة صدر. من فضلك ارفع صور أشعة الصدر فقط."
+                return False, 0.0, msg_en, msg_ar, details
             
-            # PATH 2: Check positive indicators for chest X-ray (more permissive)
-            # Score-based approach: collect positive evidence
+            # Reject if clear spine pattern (full body or spine X-ray)
+            if has_spine_pattern and not has_lung_pattern:
+                details["rejection_reason"] = "spine_pattern"
+                msg_en = "This appears to be a spine or full-body X-ray, not a chest X-ray. Please upload only chest X-ray images."
+                msg_ar = "هذه الصورة تبدو أشعة عمود فقري أو جسم كامل وليست أشعة صدر. من فضلك ارفع صور أشعة الصدر فقط."
+                return False, 0.0, msg_en, msg_ar, details
+            
+            # ACCEPTANCE LOGIC - must have positive chest indicators
+            # Score positive indicators
             chest_score = 0
-            max_score = 5
+            max_score = 4
             
-            if aspect_ok:
+            if is_square_ish:
                 chest_score += 1
-            if symmetry_score > 0.5:  # Lowered from 0.7 to allow watermarked images
+            if symmetry_score > 0.6:
                 chest_score += 1
-            if both_lungs_dark:
+            if has_lung_pattern:
                 chest_score += 1
-            if is_not_spine:
+            if 0.8 < chest_vs_abdomen < 1.3:  # Reasonable chest/abdomen ratio
                 chest_score += 1
-            if has_horizontal_structure:  # Ribcage indicator
-                chest_score += 1
-            
-            confidence = chest_score / max_score
-            
-            # Need at least 2 out of 5 checks to pass (more permissive)
-            is_chest = chest_score >= 2
             
             details["chest_score"] = chest_score
             details["max_score"] = max_score
             
-            if is_chest:
-                message_en = "Image structure is consistent with chest X-ray"
-                message_ar = "بنية الصورة متوافقة مع أشعة الصدر"
-            else:
-                if not is_not_spine:
-                    message_en = "This appears to be a spine X-ray, not a chest X-ray. Please upload only chest X-ray images."
-                    message_ar = "هذه الصورة تبدو أشعة عمود فقري وليست أشعة صدر. من فضلك ارفع صور أشعة الصدر فقط."
-                else:
-                    message_en = "This X-ray does not appear to be a chest X-ray. Please upload only chest X-ray images."
-                    message_ar = "هذه الأشعة لا تبدو أشعة صدر. من فضلك ارفع صور أشعة الصدر فقط."
+            # Require at least 3 out of 4 indicators for chest X-ray
+            is_chest = chest_score >= 3
+            confidence = chest_score / max_score
             
-            return is_chest, confidence, message_en, message_ar, details
+            if is_chest:
+                msg_en = "Image validated as chest X-ray"
+                msg_ar = "تم التحقق من الصورة كأشعة صدر"
+            else:
+                details["rejection_reason"] = "insufficient_chest_indicators"
+                msg_en = "This X-ray does not show clear chest characteristics (lungs, ribs, symmetry). Please upload a frontal chest X-ray image."
+                msg_ar = "هذه الأشعة لا تظهر خصائص الصدر الواضحة (الرئتين، الأضلاع، التناظر). من فضلك ارفع صورة أشعة صدر أمامية."
+            
+            return is_chest, confidence, msg_en, msg_ar, details
             
         except Exception as e:
             logger.warning(f"Chest X-ray geometric validation failed: {e}")
-            # On error, assume it might be chest X-ray (don't block)
-            return True, 0.5, "", "", {"error": str(e)}
+            # On error, REJECT (be conservative) 
+            return False, 0.0, "Could not validate image structure", "لم نتمكن من التحقق من بنية الصورة", {"error": str(e)}
     
     def _validate_characteristics(self, characteristics: Dict) -> Tuple[bool, float, str, str]:
         """
