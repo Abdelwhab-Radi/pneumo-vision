@@ -55,9 +55,8 @@ except ImportError:
 try:
     from config import settings
 except ImportError:
-    # Fallback if config.py not found
     class settings:
-        MODEL_PATH = os.getenv("MODEL_PATH", "./results/models/model_stage1_frozen.keras")
+        MODEL_PATH = os.getenv("MODEL_PATH", "./results/models/model_final.keras")
         CONFIG_PATH = os.getenv("CONFIG_PATH", "./results/training_config.json")
         HOST = os.getenv("HOST", "0.0.0.0")
         PORT = int(os.getenv("PORT", "8000"))
@@ -80,6 +79,11 @@ class PneumoniaDetector:
     
     # Confidence threshold for valid predictions
     PREDICTION_CONFIDENCE_THRESHOLD = 0.55
+    
+    # Optimal threshold for classification (determined by threshold optimization)
+    # Lower = more sensitive (catches more pneumonia but more false alarms)
+    # Higher = more specific (fewer false alarms but may miss cases)
+    OPTIMAL_THRESHOLD = 0.35  # Balanced threshold
     
     def __init__(self, model_path: str, config_path: str = None):
         """
@@ -193,8 +197,8 @@ class PneumoniaDetector:
             # Make prediction
             prediction = self.model.predict(img_array, verbose=0)[0][0]
             
-            # Convert to prediction
-            predicted_class_idx = int(prediction >= 0.5)
+            # Convert to prediction using optimal threshold
+            predicted_class_idx = int(prediction >= self.OPTIMAL_THRESHOLD)
             predicted_class = self.class_names[predicted_class_idx]
             confidence = float(prediction if predicted_class_idx == 1 else 1 - prediction)
             

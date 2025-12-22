@@ -453,6 +453,37 @@ class XrayValidator:
             top_bottom_ratio = np.mean(top_half) / (np.mean(bottom_half) + 1e-6)
             is_likely_pelvis = top_bottom_ratio > 1.20 and mean_brightness < 100
             
+            # DENTAL PANORAMIC X-RAY DETECTION:
+            # Dental panoramic X-rays have:
+            # 1. Wide aspect ratio (typically 2:1 or wider)
+            # 2. A bright horizontal band in the center (teeth/jaw)
+            # 3. Dark regions at top and bottom (no anatomy)
+            # 4. Characteristic curved bright region (dental arch)
+            
+            is_likely_dental = False
+            if original_aspect > 1.5:  # Dental panoramics are wide
+                # Check for bright horizontal band in the middle
+                middle_band = img_array[height//3:2*height//3, :]
+                top_band = img_array[:height//4, :]
+                bottom_band = img_array[3*height//4:, :]
+                
+                middle_brightness = np.mean(middle_band)
+                top_brightness = np.mean(top_band)
+                bottom_brightness = np.mean(bottom_band)
+                
+                # Dental X-rays: bright middle, dark top and bottom
+                middle_vs_edges = middle_brightness / ((top_brightness + bottom_brightness) / 2 + 1e-6)
+                
+                # Also check for the characteristic "curved" pattern
+                # The middle rows should have intensity that peaks in the center columns
+                middle_row_avg = np.mean(middle_band, axis=0)
+                center_intensity = np.mean(middle_row_avg[width//4:3*width//4])
+                edge_intensity = np.mean(np.concatenate([middle_row_avg[:width//6], middle_row_avg[5*width//6:]]))
+                
+                has_curved_pattern = center_intensity > edge_intensity * 1.1
+                
+                is_likely_dental = (middle_vs_edges > 1.2 and has_curved_pattern) or original_aspect > 2.0
+            
             # Ribs create horizontal dark bands
             row_means = np.mean(img_array[height//4:3*height//4, :], axis=1)  # Middle portion
             row_variance = np.var(row_means)
@@ -474,6 +505,7 @@ class XrayValidator:
                 "is_likely_hand": is_likely_hand,
                 "is_definitely_limb": is_definitely_limb,
                 "is_likely_pelvis": is_likely_pelvis,
+                "is_likely_dental": is_likely_dental,
                 "top_bottom_ratio": round(top_bottom_ratio, 3),
                 "has_horizontal_structure": has_horizontal_structure
             }
@@ -492,6 +524,13 @@ class XrayValidator:
                 details["rejection_reason"] = "pelvis_xray_detected"
                 message_en = "This appears to be a pelvis X-ray, not a chest X-ray. Please upload only chest X-ray images."
                 message_ar = "هذه الصورة تبدو أشعة حوض وليست أشعة صدر. من فضلك ارفع صور أشعة الصدر فقط."
+                return False, 0.0, message_en, message_ar, details
+            
+            # PATH 1.6: Reject if likely dental/panoramic X-ray
+            if is_likely_dental:
+                details["rejection_reason"] = "dental_xray_detected"
+                message_en = "This appears to be a dental X-ray, not a chest X-ray. Please upload only chest X-ray images."
+                message_ar = "هذه الصورة تبدو أشعة أسنان وليست أشعة صدر. من فضلك ارفع صور أشعة الصدر فقط."
                 return False, 0.0, message_en, message_ar, details
             
             # PATH 2: Check positive indicators for chest X-ray (more permissive)
@@ -702,39 +741,26 @@ class XrayValidator:
                     validation_details["detection_method"] = "trained_model"
                     
                     if is_xray:
-                        # Image is X-ray - check if it's a CHEST X-ray using geometric analysis
-                        try:
-                            is_chest, chest_conf, msg_en, msg_ar, chest_details = self._is_chest_xray(image)
-                            validation_details["chest_geometric_check"] = chest_details
-                            validation_details["chest_method"] = "geometric"
-                            
-                            if not is_chest:
-                                return ValidationResult(
-                                    is_valid=False,
-                                    confidence=0.0,
-                                    message_en=msg_en,
-                                    message_ar=msg_ar,
-                                    validation_details=validation_details
-                                )
-                            
+                        # Now check if it's specifically a CHEST X-ray (not spine, dental, hand, etc.)
+                        is_chest, chest_confidence, chest_msg_en, chest_msg_ar, chest_details = self._is_chest_xray(image)
+                        validation_details["chest_validation"] = chest_details
+                        
+                        if not is_chest:
                             return ValidationResult(
-                                is_valid=True,
-                                confidence=confidence * chest_conf,
-                                message_en="Image validated as chest X-ray",
-                                message_ar="تم التحقق من الصورة كأشعة صدر",
+                                is_valid=False,
+                                confidence=0.0,
+                                message_en=chest_msg_en,
+                                message_ar=chest_msg_ar,
                                 validation_details=validation_details
                             )
-                        except Exception as e:
-                            # On error, accept as X-ray to avoid blocking
-                            logger.warning(f"Geometric check error: {e}")
-                            validation_details["geometric_error"] = str(e)
-                            return ValidationResult(
-                                is_valid=True,
-                                confidence=confidence * 0.5,
-                                message_en="Image validated as X-ray",
-                                message_ar="تم التحقق من الصورة كأشعة",
-                                validation_details=validation_details
-                            )
+                        
+                        return ValidationResult(
+                            is_valid=True,
+                            confidence=min(confidence, chest_confidence),
+                            message_en="Image validated as chest X-ray",
+                            message_ar="تم التحقق من الصورة كأشعة صدر",
+                            validation_details=validation_details
+                        )
                     else:
                         return ValidationResult(
                             is_valid=False,
