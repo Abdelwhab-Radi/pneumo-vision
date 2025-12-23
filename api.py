@@ -75,25 +75,31 @@ logger = logging.getLogger(__name__)
 
 
 class PneumoniaDetector:
-    """Pneumonia detection model wrapper for production"""
+    """Ensemble Pneumonia detection using multiple models for higher accuracy"""
     
     # Confidence threshold for valid predictions
     PREDICTION_CONFIDENCE_THRESHOLD = 0.55
     
-    # Optimal threshold for classification (determined by threshold optimization)
-    # Lower = more sensitive (catches more pneumonia but more false alarms)
-    # Higher = more specific (fewer false alarms but may miss cases)
-    OPTIMAL_THRESHOLD = 0.35  # Balanced threshold
+    # Ensemble threshold - lower for higher sensitivity (catches more pneumonia)
+    # Based on ensemble_results.json optimal threshold with adjustment for sensitivity
+    OPTIMAL_THRESHOLD = 0.30  # Lower threshold = higher sensitivity
+    
+    # Model paths for ensemble
+    ENSEMBLE_MODELS = [
+        "./results/models/model_final.keras",
+        "./results/models/model_stage1_frozen.keras",
+    ]
     
     def __init__(self, model_path: str, config_path: str = None):
         """
-        Initialize the detector
+        Initialize the ensemble detector
         
         Args:
-            model_path: Path to the trained Keras model
+            model_path: Primary model path (also loads ensemble models)
             config_path: Path to training configuration (optional)
         """
         self.model_path = model_path
+        self.models = []
         
         # Load configuration
         if config_path and Path(config_path).exists():
@@ -111,36 +117,49 @@ class PneumoniaDetector:
         self.img_size = self.config.get('img_size', 224)
         self.class_names = self.config.get('class_names', ['NORMAL', 'PNEUMONIA'])
         
-        # Load model
-        logger.info(f"Loading model from: {model_path}")
-        try:
-            self.model = keras.models.load_model(model_path)
-            logger.info("✓ Model loaded successfully")
-            
-            # Auto-detect input size from model
-            try:
-                model_input_shape = self.model.input_shape
-                if model_input_shape and len(model_input_shape) >= 3:
-                    model_img_size = model_input_shape[1]  # (batch, height, width, channels)
-                    if model_img_size and model_img_size != self.img_size:
-                        logger.warning(f"Config img_size ({self.img_size}) differs from model input ({model_img_size}). Using model input size.")
-                        self.img_size = model_img_size
-            except Exception as e:
-                logger.warning(f"Could not auto-detect model input size: {e}")
-                
-        except Exception as e:
-            logger.error(f"Failed to load model: {e}")
-            raise
+        # Load ensemble models
+        logger.info("Loading ensemble models...")
+        for model_file in self.ENSEMBLE_MODELS:
+            if Path(model_file).exists():
+                try:
+                    logger.info(f"Loading: {model_file}")
+                    model = keras.models.load_model(model_file)
+                    self.models.append(model)
+                    logger.info(f"✓ Loaded {model_file}")
+                except Exception as e:
+                    logger.warning(f"Could not load {model_file}: {e}")
         
-        # Warm up the model
+        # Fallback to single model if ensemble failed
+        if not self.models:
+            logger.warning("No ensemble models loaded, falling back to single model")
+            self.models = [keras.models.load_model(model_path)]
+        
+        logger.info(f"✓ Ensemble ready with {len(self.models)} models")
+        
+        # Auto-detect input size from first model
+        try:
+            model_input_shape = self.models[0].input_shape
+            if model_input_shape and len(model_input_shape) >= 3:
+                model_img_size = model_input_shape[1]
+                if model_img_size and model_img_size != self.img_size:
+                    logger.warning(f"Config img_size ({self.img_size}) differs from model input ({model_img_size}). Using model input size.")
+                    self.img_size = model_img_size
+        except Exception as e:
+            logger.warning(f"Could not auto-detect model input size: {e}")
+        
+        # Keep reference for compatibility
+        self.model = self.models[0]
+        
+        # Warm up models
         self._warmup()
     
     def _warmup(self):
-        """Warm up the model with a dummy prediction"""
-        logger.info("Warming up model...")
+        """Warm up all models with a dummy prediction"""
+        logger.info("Warming up ensemble models...")
         dummy_input = np.random.rand(1, self.img_size, self.img_size, 3).astype(np.float32)
-        _ = self.model.predict(dummy_input, verbose=0)
-        logger.info("✓ Model warmed up")
+        for i, model in enumerate(self.models):
+            _ = model.predict(dummy_input, verbose=0)
+        logger.info(f"✓ {len(self.models)} models warmed up")
     
     def preprocess_image(self, image_bytes: bytes) -> np.ndarray:
         """
@@ -194,10 +213,16 @@ class PneumoniaDetector:
             # Preprocess image
             img_array = self.preprocess_image(image_bytes)
             
-            # Make prediction
-            prediction = self.model.predict(img_array, verbose=0)[0][0]
+            # Ensemble prediction - average predictions from all models
+            predictions = []
+            for model in self.models:
+                pred = model.predict(img_array, verbose=0)[0][0]
+                predictions.append(float(pred))
             
-            # Convert to prediction using optimal threshold
+            # Average ensemble prediction
+            prediction = np.mean(predictions)
+            
+            # Convert to prediction using optimal threshold (lower for high sensitivity)
             predicted_class_idx = int(prediction >= self.OPTIMAL_THRESHOLD)
             predicted_class = self.class_names[predicted_class_idx]
             confidence = float(prediction if predicted_class_idx == 1 else 1 - prediction)
@@ -206,7 +231,8 @@ class PneumoniaDetector:
             result = {
                 'prediction': predicted_class,
                 'confidence': round(confidence, 4),
-                'timestamp': datetime.now().isoformat()
+                'timestamp': datetime.now().isoformat(),
+                'ensemble_size': len(self.models)
             }
             
             if return_confidence:
@@ -214,8 +240,9 @@ class PneumoniaDetector:
                     self.class_names[0]: round(float(1 - prediction), 4),
                     self.class_names[1]: round(float(prediction), 4)
                 }
+                result['individual_predictions'] = predictions
             
-            logger.info(f"Prediction: {predicted_class} (confidence: {confidence:.4f})")
+            logger.info(f"Ensemble Prediction: {predicted_class} (confidence: {confidence:.4f}, models: {len(self.models)})")
             
             return result
             
