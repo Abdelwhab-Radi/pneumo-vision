@@ -5,7 +5,7 @@
 
 // Configuration
 const CONFIG = {
-    API_BASE_URL: 'https://determined-stillness-production.up.railway.app',
+    API_BASE_URL: 'https://hypotrichous-wrier-arnulfo.ngrok-free.dev',
     ENDPOINTS: {
         HEALTH: '/health',
         PREDICT: '/predict',
